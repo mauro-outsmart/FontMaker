@@ -103,7 +103,7 @@ function extractDots(grid, w, h) {
   const visited = new Uint8Array(w * h);
   const dotStrokes = [];
   const remaining = new Uint8Array(grid);
-  const DOT_MAX_PIXELS = Math.round(w * h * 0.004); // ~160 pixels at 200x200
+  const DOT_MAX_PIXELS = Math.round(w * h * 0.008); // ~320 pixels at 200x200
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -129,14 +129,14 @@ function extractDots(grid, w, h) {
       const cy = pixels.reduce((s, p) => s + p.y, 0) / pixels.length;
       const radius = Math.max(bw, bh) / 2;
 
-      // Create a small circular stroke
-      const steps = 8;
+      // Create a circular stroke matching the dot size
+      const steps = 10;
       const stroke = [];
       for (let i = 0; i <= steps; i++) {
         const angle = (i / steps) * Math.PI * 2;
         stroke.push({
-          x: cx + Math.cos(angle) * radius * 0.4,
-          y: cy + Math.sin(angle) * radius * 0.4,
+          x: cx + Math.cos(angle) * radius * 0.9,
+          y: cy + Math.sin(angle) * radius * 0.9,
         });
       }
       dotStrokes.push(stroke);
