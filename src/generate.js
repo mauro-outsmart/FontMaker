@@ -27,9 +27,13 @@ function generateGlyph(char, referenceFont, size) {
   }
   if (!hasPixels) return [];
 
-  const skeleton = zhangSuenThin(grid, size, size);
+  // Extract small round components before thinning (dots get erased by Zhang-Suen)
+  const { dotStrokes, remaining } = extractDots(grid, size, size);
+
+  const skeleton = zhangSuenThin(remaining, size, size);
 
   let strokes = traceSkeletonStrokes(skeleton, size, size);
+  strokes = dotStrokes.concat(strokes);
   if (strokes.length === 0) return [];
 
   // Sort top-to-bottom, left-to-right for natural stroke order
@@ -70,6 +74,80 @@ function renderCharToBitmap(char, font, size) {
     grid[i] = imageData.data[i * 4 + 3] > 128 ? 1 : 0;
   }
   return grid;
+}
+
+// --- Step 1b: Extract small round components (dots) before thinning ---
+
+function floodFill(grid, w, h, sx, sy, visited) {
+  const pixels = [];
+  const stack = [{ x: sx, y: sy }];
+  visited[sy * w + sx] = 1;
+  while (stack.length > 0) {
+    const { x, y } = stack.pop();
+    pixels.push({ x, y });
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        if (!grid[ny * w + nx] || visited[ny * w + nx]) continue;
+        visited[ny * w + nx] = 1;
+        stack.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return pixels;
+}
+
+function extractDots(grid, w, h) {
+  const visited = new Uint8Array(w * h);
+  const dotStrokes = [];
+  const remaining = new Uint8Array(grid);
+  const DOT_MAX_PIXELS = Math.round(w * h * 0.004); // ~160 pixels at 200x200
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!grid[y * w + x] || visited[y * w + x]) continue;
+      const pixels = floodFill(grid, w, h, x, y, visited);
+      if (pixels.length > DOT_MAX_PIXELS) continue;
+
+      // Check aspect ratio — dots are roughly circular
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+      for (const p of pixels) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+      const bw = maxX - minX + 1;
+      const bh = maxY - minY + 1;
+      const ratio = Math.min(bw, bh) / Math.max(bw, bh);
+      if (ratio < 0.4) continue; // not a dot, skip (e.g. a dash)
+
+      // Centroid
+      const cx = pixels.reduce((s, p) => s + p.x, 0) / pixels.length;
+      const cy = pixels.reduce((s, p) => s + p.y, 0) / pixels.length;
+      const radius = Math.max(bw, bh) / 2;
+
+      // Create a small circular stroke
+      const steps = 8;
+      const stroke = [];
+      for (let i = 0; i <= steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        stroke.push({
+          x: cx + Math.cos(angle) * radius * 0.4,
+          y: cy + Math.sin(angle) * radius * 0.4,
+        });
+      }
+      dotStrokes.push(stroke);
+
+      // Remove from remaining bitmap so thinning doesn't touch these pixels
+      for (const p of pixels) {
+        remaining[p.y * w + p.x] = 0;
+      }
+    }
+  }
+  return { dotStrokes, remaining };
 }
 
 // --- Step 2: Zhang-Suen thinning ---
