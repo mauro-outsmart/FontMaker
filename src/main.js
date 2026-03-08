@@ -7,6 +7,7 @@ import { exportFont } from './font-export.js';
 import { exportGIF } from './gif-export.js';
 import { exportHTML } from './html-export.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
+import { generateAllGlyphs } from './generate.js';
 
 async function init() {
   // Load settings
@@ -236,6 +237,17 @@ async function init() {
       editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
     });
     updateProgress();
+  });
+
+  // Generate button
+  document.getElementById('generateBtn').addEventListener('click', () => {
+    if (!confirm('Generate all glyphs from reference font? This will overwrite existing glyphs.')) return;
+    generateAllGlyphs(refFontSelect.value);
+    renderGrid(glyphGrid, getGlyphSet(), getSettings(), (char) => {
+      editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
+    });
+    updateProgress();
+    preview.render();
   });
 
   // Export button
