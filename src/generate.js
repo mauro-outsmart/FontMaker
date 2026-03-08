@@ -124,22 +124,13 @@ function extractDots(grid, w, h) {
       const ratio = Math.min(bw, bh) / Math.max(bw, bh);
       if (ratio < 0.4) continue; // not a dot, skip (e.g. a dash)
 
-      // Centroid
+      // Centroid — create a short tap stroke (pen press) instead of a circle
       const cx = pixels.reduce((s, p) => s + p.x, 0) / pixels.length;
       const cy = pixels.reduce((s, p) => s + p.y, 0) / pixels.length;
-      const radius = Math.max(bw, bh) / 2;
-
-      // Create a circular stroke matching the dot size
-      const steps = 10;
-      const stroke = [];
-      for (let i = 0; i <= steps; i++) {
-        const angle = (i / steps) * Math.PI * 2;
-        stroke.push({
-          x: cx + Math.cos(angle) * radius * 0.9,
-          y: cy + Math.sin(angle) * radius * 0.9,
-        });
-      }
-      dotStrokes.push(stroke);
+      dotStrokes.push([
+        { x: cx - 0.3, y: cy - 0.3 },
+        { x: cx + 0.3, y: cy + 0.3 },
+      ]);
 
       // Remove from remaining bitmap so thinning doesn't touch these pixels
       for (const p of pixels) {
