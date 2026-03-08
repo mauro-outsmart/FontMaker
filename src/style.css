@@ -64,7 +64,8 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.anim-control[disabled] {
+.anim-control[disabled],
+.btn--primary[disabled] {
   opacity: 0.3;
   pointer-events: none;
 }

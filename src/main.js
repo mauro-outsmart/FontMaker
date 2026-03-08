@@ -251,7 +251,8 @@ async function init() {
   });
 
   // Export button
-  document.getElementById('exportBtn').addEventListener('click', () => {
+  const exportBtn = document.getElementById('exportBtn');
+  exportBtn.addEventListener('click', () => {
     const fontName = document.getElementById('fontName').value || 'MyFont';
     const sw = parseInt(document.getElementById('strokeWidth').value);
     const kern = parseInt(document.getElementById('kerning').value);
@@ -360,6 +361,8 @@ async function init() {
 function updateProgress() {
   const count = getDrawnCount();
   document.getElementById('progressCount').textContent = count + ' / ' + GLYPHS.length;
+  const exportBtn = document.getElementById('exportBtn');
+  exportBtn.disabled = count === 0;
 }
 
 // Make updateProgress available for other modules
