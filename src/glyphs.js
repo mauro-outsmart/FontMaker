@@ -1,5 +1,5 @@
-const STORAGE_KEY = 'jkbFontMaker_glyphs';
-const SETTINGS_KEY = 'jkbFontMaker_settings';
+const STORAGE_KEY = 'FontMaker_glyphs';
+const SETTINGS_KEY = 'FontMaker_settings';
 const DEFAULT_WIDTH = 650;
 
 const GLYPHS = [
@@ -23,7 +23,7 @@ function saveGlyphStore(store) {
 }
 
 function makeDefaultGlyph(char) {
-  return { char, strokes: [], width: DEFAULT_WIDTH };
+  return { char, strokes: [], width: DEFAULT_WIDTH, kerningLeft: null, kerningRight: null };
 }
 
 function getGlyphSet() {
@@ -31,7 +31,8 @@ function getGlyphSet() {
   return GLYPHS.map((char) => {
     const saved = store[char];
     if (saved) {
-      return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH };
+      return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH,
+               kerningLeft: saved.kerningLeft ?? null, kerningRight: saved.kerningRight ?? null };
     }
     return makeDefaultGlyph(char);
   });
@@ -41,14 +42,37 @@ function getGlyph(char) {
   const store = loadGlyphStore();
   const saved = store[char];
   if (saved) {
-    return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH };
+    return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH,
+             kerningLeft: saved.kerningLeft ?? null, kerningRight: saved.kerningRight ?? null };
   }
   return makeDefaultGlyph(char);
 }
 
 function saveGlyph(char, strokes) {
   const store = loadGlyphStore();
-  store[char] = { strokes, width: store[char]?.width || DEFAULT_WIDTH };
+  store[char] = {
+    strokes,
+    width: store[char]?.width || DEFAULT_WIDTH,
+    kerningLeft: store[char]?.kerningLeft ?? null,
+    kerningRight: store[char]?.kerningRight ?? null,
+  };
+  saveGlyphStore(store);
+}
+
+function saveGlyphKerning(char, kerningLeft, kerningRight) {
+  const store = loadGlyphStore();
+  if (!store[char]) store[char] = { strokes: [], width: DEFAULT_WIDTH };
+  store[char].kerningLeft = kerningLeft;
+  store[char].kerningRight = kerningRight;
+  saveGlyphStore(store);
+}
+
+function resetAllKerning() {
+  const store = loadGlyphStore();
+  for (const char of Object.keys(store)) {
+    delete store[char].kerningLeft;
+    delete store[char].kerningRight;
+  }
   saveGlyphStore(store);
 }
 
@@ -82,9 +106,11 @@ function getSettings() {
       referenceFont: saved.referenceFont || 'Arial',
       strokeWidth: saved.strokeWidth || 8,
       kerning: saved.kerning ?? 0,
+      lineBoil: saved.lineBoil ?? false,
+      brushType: saved.brushType || 'normal',
     };
   } catch {
-    return { fontName: 'My Font', referenceFont: 'Arial', strokeWidth: 8, kerning: 0 };
+    return { fontName: 'My Font', referenceFont: 'Arial', strokeWidth: 8, kerning: 0, lineBoil: false, brushType: 'normal' };
   }
 }
 
@@ -120,6 +146,8 @@ export {
   getGlyphSet,
   getGlyph,
   saveGlyph,
+  saveGlyphKerning,
+  resetAllKerning,
   clearGlyph,
   clearAllGlyphs,
   isGlyphDrawn,

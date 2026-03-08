@@ -1,9 +1,11 @@
+import { drawStroke } from './brushes.js';
+
 export const TRACE_SIZE = 1000;
 
-export function glyphToContours(strokes, strokeWidth) {
+export function glyphToContours(strokes, strokeWidth, brushType = 'normal') {
   if (!strokes || strokes.length === 0) return [];
 
-  const { grid, width, height } = renderToGrid(strokes, strokeWidth);
+  const { grid, width, height } = renderToGrid(strokes, strokeWidth, brushType);
   const rawContours = extractContours(grid, width, height);
 
   const simplified = rawContours
@@ -61,30 +63,19 @@ function isPointInContour(point, contour) {
   return inside;
 }
 
-function renderToGrid(strokes, strokeWidth) {
+function renderToGrid(strokes, strokeWidth, brushType) {
   const size = TRACE_SIZE;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
 
+  const lw = strokeWidth * (size / 200);
   ctx.strokeStyle = '#fff';
-  ctx.lineWidth = strokeWidth * (size / 200);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
 
   for (const stroke of strokes) {
     if (stroke.length < 2) continue;
-    ctx.beginPath();
-    ctx.moveTo(stroke[0].x * size, stroke[0].y * size);
-    for (let i = 1; i < stroke.length - 1; i++) {
-      const xc = (stroke[i].x + stroke[i + 1].x) / 2 * size;
-      const yc = (stroke[i].y + stroke[i + 1].y) / 2 * size;
-      ctx.quadraticCurveTo(stroke[i].x * size, stroke[i].y * size, xc, yc);
-    }
-    const last = stroke[stroke.length - 1];
-    ctx.lineTo(last.x * size, last.y * size);
-    ctx.stroke();
+    drawStroke(ctx, stroke, lw, brushType, 0, 0, size, size);
   }
 
   const imageData = ctx.getImageData(0, 0, size, size);

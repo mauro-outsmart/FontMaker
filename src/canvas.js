@@ -1,14 +1,20 @@
+import { drawStroke } from './brushes.js';
+
 export class DrawingEngine {
   constructor(canvas, options = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.strokes = [];        // completed strokes: array of arrays of {x,y}
+    this.strokes = [];        // completed strokes: array of arrays of {x,y,t}
     this.currentStroke = null; // in-progress stroke
+    this.glyphStartTime = null; // timestamp of first point for timing recording
     this.strokeWidth = options.strokeWidth || 8;
     this.strokeColor = options.strokeColor || '#fff';
+    this.brushType = options.brushType || 'normal';
     this.referenceGlyph = null;
     this.referenceFont = null;
     this.isDrawing = false;
+    this.drawingEnabled = true;
+    this.onAfterRender = null;
 
     this._onStart = this._onStart.bind(this);
     this._onMove = this._onMove.bind(this);
@@ -25,23 +31,43 @@ export class DrawingEngine {
     this.canvas.style.touchAction = 'none';
   }
 
+  getLayout() {
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const squareSize = ch;
+    const extraPx = (cw - squareSize) / 2;
+    return { cw, ch, squareSize, extraPx };
+  }
+
   _getPoint(e) {
     const rect = this.canvas.getBoundingClientRect();
+    const { squareSize, extraPx } = this.getLayout();
+    const scale = this.canvas.width / rect.width;
+    const displayExtra = extraPx / scale;
+    const displaySquare = squareSize / scale;
     return {
-      x: (e.clientX - rect.left) / rect.width,
+      x: (e.clientX - rect.left - displayExtra) / displaySquare,
       y: (e.clientY - rect.top) / rect.height,
     };
   }
 
   _onStart(e) {
+    if (!this.drawingEnabled) return;
     this.isDrawing = true;
-    this.currentStroke = [this._getPoint(e)];
+    if (this.glyphStartTime === null) {
+      this.glyphStartTime = performance.now();
+    }
+    const pt = this._getPoint(e);
+    pt.t = Math.round(performance.now() - this.glyphStartTime);
+    this.currentStroke = [pt];
     this.canvas.setPointerCapture(e.pointerId);
   }
 
   _onMove(e) {
     if (!this.isDrawing || !this.currentStroke) return;
-    this.currentStroke.push(this._getPoint(e));
+    const pt = this._getPoint(e);
+    pt.t = Math.round(performance.now() - this.glyphStartTime);
+    this.currentStroke.push(pt);
     this.render();
   }
 
@@ -72,62 +98,54 @@ export class DrawingEngine {
     if (this.currentStroke && this.currentStroke.length >= 2) {
       this._drawStroke(this.currentStroke);
     }
+
+    if (this.onAfterRender) this.onAfterRender();
   }
 
   _drawReference() {
     if (!this.referenceGlyph || !this.referenceFont) return;
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const { squareSize, extraPx } = this.getLayout();
 
     ctx.save();
-    const fontSize = h * 0.7;
+    const fontSize = squareSize * 0.7;
     ctx.font = `${fontSize}px "${this.referenceFont}"`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.referenceGlyph, w / 2, h / 2);
+    ctx.fillText(this.referenceGlyph, extraPx + squareSize / 2, squareSize / 2);
     ctx.restore();
   }
 
   _drawStroke(points) {
     if (points.length < 2) return;
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const { squareSize, extraPx } = this.getLayout();
+    const lw = this.strokeWidth * (squareSize / 200);
 
     ctx.save();
     ctx.strokeStyle = this.strokeColor;
-    ctx.lineWidth = this.strokeWidth * (w / 200); // scale stroke width relative to canvas
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.beginPath();
-    ctx.moveTo(points[0].x * w, points[0].y * h);
-
-    // Quadratic curve interpolation for smooth lines
-    for (let i = 1; i < points.length - 1; i++) {
-      const xc = (points[i].x + points[i + 1].x) / 2 * w;
-      const yc = (points[i].y + points[i + 1].y) / 2 * h;
-      ctx.quadraticCurveTo(points[i].x * w, points[i].y * h, xc, yc);
-    }
-    // Line to last point
-    const last = points[points.length - 1];
-    ctx.lineTo(last.x * w, last.y * h);
-
-    ctx.stroke();
+    drawStroke(ctx, points, lw, this.brushType, extraPx, 0, squareSize, squareSize);
     ctx.restore();
   }
 
   setStrokes(strokes) {
-    this.strokes = strokes.map(s => [...s]);
+    this.strokes = strokes.map(s => s.map(p => ({ ...p })));
     this.currentStroke = null;
     this.isDrawing = false;
+    // Find max timestamp so new strokes continue from where recording left off
+    let maxT = 0;
+    for (const s of this.strokes) {
+      for (const p of s) {
+        if (p.t > maxT) maxT = p.t;
+      }
+    }
+    this.glyphStartTime = maxT > 0 ? performance.now() - maxT : null;
     this.render();
   }
 
   getStrokes() {
-    return this.strokes.map(s => [...s]);
+    return this.strokes.map(s => s.map(p => ({ ...p })));
   }
 
   undo() {
@@ -139,11 +157,17 @@ export class DrawingEngine {
     this.strokes = [];
     this.currentStroke = null;
     this.isDrawing = false;
+    this.glyphStartTime = null;
     this.render();
   }
 
   setStrokeWidth(w) {
     this.strokeWidth = w;
+    this.render();
+  }
+
+  setBrushType(type) {
+    this.brushType = type;
     this.render();
   }
 

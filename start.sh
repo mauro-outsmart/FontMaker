@@ -1,5 +1,5 @@
 #!/bin/bash
-# jkbFontMaker — Local Development Server
+# FontMaker — Local Development Server
 set -euo pipefail
 
 NAME="Font Maker"

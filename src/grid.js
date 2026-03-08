@@ -1,3 +1,5 @@
+import { drawStroke } from './brushes.js';
+
 export function renderGrid(container, glyphs, settings, onGlyphClick) {
   // Preserve progress badge if it exists
   let badge = container.querySelector('.grid-progress');
@@ -41,12 +43,13 @@ function createGlyphCard(glyph, settings) {
   label.textContent = glyph.char;
   card.appendChild(label);
 
-  renderThumbnail(canvas, glyph, settings);
+  // We explicitly use the original strokes here initially.
+  renderThumbnail(canvas, glyph, settings, glyph.strokes);
 
   return card;
 }
 
-export function renderThumbnail(canvas, glyph, settings) {
+export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
@@ -66,25 +69,15 @@ export function renderThumbnail(canvas, glyph, settings) {
   }
 
   // Draw strokes
-  if (glyph.strokes.length) {
+  const strokesToDraw = customStrokes || glyph.strokes;
+  if (strokesToDraw && strokesToDraw.length) {
+    const lw = (settings.strokeWidth || 8) * (w / 200);
+    const brushType = settings.brushType || 'normal';
     ctx.save();
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = (settings.strokeWidth || 8) * (w / 200);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    for (const stroke of glyph.strokes) {
-      if (stroke.length < 2) continue;
-      ctx.beginPath();
-      ctx.moveTo(stroke[0].x * w, stroke[0].y * h);
-      for (let i = 1; i < stroke.length - 1; i++) {
-        const xc = (stroke[i].x + stroke[i + 1].x) / 2 * w;
-        const yc = (stroke[i].y + stroke[i + 1].y) / 2 * h;
-        ctx.quadraticCurveTo(stroke[i].x * w, stroke[i].y * h, xc, yc);
-      }
-      const last = stroke[stroke.length - 1];
-      ctx.lineTo(last.x * w, last.y * h);
-      ctx.stroke();
+    for (const stroke of strokesToDraw) {
+      if (!stroke || stroke.length < 2) continue;
+      drawStroke(ctx, stroke, lw, brushType, 0, 0, w, h);
     }
     ctx.restore();
   }
@@ -97,7 +90,21 @@ export function refreshAllThumbnails(container, glyphSet, settings) {
     const char = card.dataset.char;
     if (!canvas || !char) continue;
     const glyph = glyphSet.find(g => g.char === char);
-    if (glyph) renderThumbnail(canvas, glyph, settings);
+    if (glyph) renderThumbnail(canvas, glyph, settings, glyph.strokes);
+  }
+}
+
+export function refreshAllThumbnailsBoilFrame(container, glyphSet, settings, getFrameStrokes) {
+  const cards = container.querySelectorAll('.glyph-card--drawn');
+  for (const card of cards) {
+    const canvas = card.querySelector('canvas');
+    const char = card.dataset.char;
+    if (!canvas || !char) continue;
+    const glyph = glyphSet.find(g => g.char === char);
+    if (glyph) {
+      const strokes = getFrameStrokes(char, glyph.strokes);
+      renderThumbnail(canvas, glyph, settings, strokes);
+    }
   }
 }
 

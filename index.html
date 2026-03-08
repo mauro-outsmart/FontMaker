@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>jkbFontMaker</title>
+  <title>FontMaker</title>
   <link rel="icon" type="image/png" href="/icon.png">
   <link rel="apple-touch-icon" href="/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css">
 </head>
+
 <body>
   <div id="app">
     <header class="top-bar">
       <div class="top-bar__row">
-        <img src="/symbol.png" alt="jkbFontMaker" class="top-bar__logo">
+        <img src="/symbol.png" alt="FontMaker" class="top-bar__logo">
         <input type="text" class="font-name-input" id="fontName" value="My Font" spellcheck="false" autocomplete="off">
         <div class="top-bar__spacer"></div>
         <button class="btn btn--ghost" id="importBtn">Import</button>
@@ -32,13 +35,43 @@
           <input type="range" id="strokeWidth" min="2" max="24" value="8" class="control__range">
           <span class="control__value" id="strokeWidthValue">8px</span>
         </label>
+        <label class="control" id="controlBrush">
+          <span class="control__label">Style</span>
+          <select id="brushType" class="control__select">
+            <option value="normal">Flat</option>
+            <option value="growing">Paintbrush</option>
+            <option value="rough">Rough</option>
+          </select>
+        </label>
         <label class="control" id="controlKerning">
           <span class="control__label">Kerning</span>
-          <input type="range" id="kerning" min="-200" max="200" value="0" class="control__range">
+          <input type="range" id="kerning" min="-200" max="200" value="0" step="10" class="control__range">
           <span class="control__value" id="kerningValue">0</span>
         </label>
         <div class="top-bar__spacer"></div>
+        <button class="btn btn--ghost" id="resetKerningBtn">Reset Kerning</button>
+        <span class="top-bar__divider">|</span>
         <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
+      </div>
+      <div class="top-bar__row top-bar__row--anim">
+        <span class="control__label">Animation</span>
+        <label class="control" style="cursor: pointer;">
+          <input type="checkbox" id="lineBoil" class="control__checkbox" style="accent-color: var(--text);">
+          <span class="control__label">Line Boil</span>
+        </label>
+        <label class="control" style="cursor: pointer;">
+          <input type="checkbox" id="revealAnim" class="control__checkbox" style="accent-color: var(--text);">
+          <span class="control__label">Reveal</span>
+        </label>
+        <button class="btn btn--icon reveal-control" id="playAnimBtn" title="Play animation" disabled>&#9654;</button>
+        <label class="control reveal-control">
+          <span class="control__label">Speed</span>
+          <input type="range" id="animSpeed" min="0.25" max="3" value="1" step="0.25" class="control__range" disabled>
+          <span class="control__value" id="animSpeedValue">1x</span>
+        </label>
+        <div class="top-bar__spacer"></div>
+        <button class="btn btn--primary anim-control" id="exportGifBtn" disabled>Export GIF</button>
+        <button class="btn btn--primary anim-control" id="exportHtmlBtn" disabled>Export HTML</button>
       </div>
     </header>
 
@@ -48,7 +81,8 @@
       <div class="preview-handle" id="previewHandle">
         <span class="preview-handle__bar"></span>
       </div>
-      <input type="text" class="preview-input" id="previewInput" placeholder="Type to preview your font..." value="" spellcheck="false" autocomplete="off">
+      <input type="text" class="preview-input" id="previewInput" placeholder="Type to preview your font..." value=""
+        spellcheck="false" autocomplete="off">
       <canvas class="preview-canvas" id="previewCanvas"></canvas>
     </section>
 
@@ -58,6 +92,10 @@
           <button class="btn btn--icon" id="editorPrev" title="Previous glyph">&larr;</button>
           <span class="modal__glyph-label" id="editorLabel">A</span>
           <button class="btn btn--icon" id="editorNext" title="Next glyph">&rarr;</button>
+          <label class="control" style="cursor: pointer;">
+            <input type="checkbox" id="editorKerningToggle" class="control__checkbox" style="accent-color: var(--text);">
+            <span class="control__label">Edit kerning</span>
+          </label>
           <div class="modal__spacer"></div>
           <button class="btn btn--ghost" id="editorUndo">Undo</button>
           <button class="btn btn--ghost" id="editorClear">Clear</button>
@@ -72,4 +110,5 @@
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>

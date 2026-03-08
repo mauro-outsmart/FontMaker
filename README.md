@@ -1,6 +1,6 @@
-<img src="icon.png" alt="jkbFontMaker" width="128">
+<img src="icon.png" alt="FontMaker" width="128">
 
-# jkbFontMaker
+# FontMaker
 
 A browser-based tool for creating handwritten fonts. Draw each glyph on canvas, preview your typeface in real time, and export it as an OpenType (.otf) file.
 
