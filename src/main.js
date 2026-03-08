@@ -8,6 +8,7 @@ import { exportGIF } from './gif-export.js';
 import { exportHTML } from './html-export.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
 import { generateAllGlyphs } from './generate.js';
+import { exportWebFont } from './webfont-export.js';
 
 async function init() {
   // Load settings
@@ -260,6 +261,13 @@ async function init() {
     exportFont(fontName, sw, kern, bt);
   });
 
+  // Export JS web component button
+  const exportJsBtn = document.getElementById('exportJsBtn');
+  exportJsBtn.addEventListener('click', () => {
+    const fontName = document.getElementById('fontName').value || 'MyFont';
+    exportWebFont(fontName);
+  });
+
   // Import button
   const importFileInput = document.getElementById('importFile');
   document.getElementById('importBtn').addEventListener('click', () => {
@@ -361,8 +369,9 @@ async function init() {
 function updateProgress() {
   const count = getDrawnCount();
   document.getElementById('progressCount').textContent = count + ' / ' + GLYPHS.length;
-  const exportBtn = document.getElementById('exportBtn');
-  exportBtn.disabled = count === 0;
+  const noGlyphs = count === 0;
+  document.getElementById('exportBtn').disabled = noGlyphs;
+  document.getElementById('exportJsBtn').disabled = noGlyphs;
 }
 
 // Make updateProgress available for other modules
