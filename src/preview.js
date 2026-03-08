@@ -92,27 +92,29 @@ export class Preview {
         }
 
         const glyph = getGlyph(char);
+        const hasStrokes = glyph && glyph.strokes && glyph.strokes.length > 0;
         const hasPerGlyph = glyph.kerningLeft !== null || glyph.kerningRight !== null;
         const kl = hasPerGlyph ? (glyph.kerningLeft || 0) : 0;
         const kr = hasPerGlyph ? (glyph.kerningRight || 0) : 0;
         const kern = hasPerGlyph ? (kl + kr) : this.kerning;
-        const glyphAdvance = glyphSize * (650 + kern) / 1000;
         const leftOffset = glyphSize * kl / 1000;
 
-        if (glyph && glyph.strokes && glyph.strokes.length > 0) {
+        if (hasStrokes) {
+          const glyphAdvance = glyphSize * (650 + kern) / 1000;
           const strokesToDraw = getCustomStrokes ? getCustomStrokes(char, glyph.strokes) : glyph.strokes;
           this._drawGlyphStrokes(ctx, strokesToDraw, x + leftOffset, y, glyphSize);
+          x += glyphAdvance;
         } else {
           ctx.save();
           ctx.globalAlpha = 0.15;
           ctx.font = `${glyphSize}px "${this.referenceFont}"`;
           ctx.fillStyle = '#fff';
           ctx.textBaseline = 'top';
-          ctx.fillText(char, x + leftOffset, y);
+          ctx.fillText(char, x, y);
+          const measured = ctx.measureText(char);
           ctx.restore();
+          x += measured.width;
         }
-
-        x += glyphAdvance;
       }
     }
   }
@@ -134,11 +136,16 @@ export class Preview {
       let wordWidth = 0;
       for (const char of word) {
         const glyph = getGlyph(char);
-        const hasPerGlyph = glyph.kerningLeft !== null || glyph.kerningRight !== null;
-        const kl = hasPerGlyph ? (glyph.kerningLeft || 0) : 0;
-        const kr = hasPerGlyph ? (glyph.kerningRight || 0) : 0;
-        const kern = hasPerGlyph ? (kl + kr) : this.kerning;
-        wordWidth += glyphSize * (650 + kern) / 1000;
+        const hasStrokes = glyph && glyph.strokes && glyph.strokes.length > 0;
+        if (hasStrokes) {
+          const hasPerGlyph = glyph.kerningLeft !== null || glyph.kerningRight !== null;
+          const kl = hasPerGlyph ? (glyph.kerningLeft || 0) : 0;
+          const kr = hasPerGlyph ? (glyph.kerningRight || 0) : 0;
+          const kern = hasPerGlyph ? (kl + kr) : this.kerning;
+          wordWidth += glyphSize * (650 + kern) / 1000;
+        } else {
+          wordWidth += this._measureRefChar(char, glyphSize);
+        }
       }
 
       // Wrap before the word if it would overflow
@@ -154,6 +161,15 @@ export class Preview {
     }
 
     return lines;
+  }
+
+  _measureRefChar(char, glyphSize) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.font = `${glyphSize}px "${this.referenceFont}"`;
+    const w = ctx.measureText(char).width;
+    ctx.restore();
+    return w;
   }
 
   _drawGlyphStrokes(ctx, strokes, offsetX, offsetY, size) {
