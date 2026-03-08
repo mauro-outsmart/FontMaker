@@ -125,9 +125,9 @@ if(t!==this._text){this._text=t;this._restart();}
 this._restart();
 }
 disconnectedCallback(){if(this._raf)cancelAnimationFrame(this._raf);this._running=false;}
-attributeChangedCallback(){if(this._running)this._restart();}
+attributeChangedCallback(){this._restart();}
 
-get _mode(){return this.getAttribute('mode')||'boil'}
+get _mode(){return this.getAttribute('mode')||'static'}
 get _speed(){return parseFloat(this.getAttribute('speed'))||1}
 get _color(){return this.getAttribute('color')||'#ffffff'}
 get _size(){return parseInt(this.getAttribute('size'))||48}
@@ -137,6 +137,9 @@ if(this._raf)cancelAnimationFrame(this._raf);
 this._startTs=0;this._boilFrame=0;this._lastBoilT=0;
 this._running=true;
 this._layout();
+if(this._mode==='static'){
+this._renderFrame((ch,ci,g)=>g.s||[]);
+this._running=false;return;}
 this._raf=requestAnimationFrame(ts=>this._tick(ts));
 }
 
