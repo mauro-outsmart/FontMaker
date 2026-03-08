@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: '.',
-  base: '/fontmaker/',
+  base: '/FontMaker/',
   build: {
     outDir: 'dist',
   },
