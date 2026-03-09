@@ -147,6 +147,37 @@ function clearAllGlyphs() {
   saveGlyphStore({});
 }
 
+// --- Batch write API (avoids repeated JSON.parse/stringify during generation) ---
+
+let _batchStore = null;
+
+function beginBatch() {
+  _batchStore = loadGlyphStore();
+}
+
+function batchSaveGlyph(char, strokes) {
+  if (!_batchStore) return saveGlyph(char, strokes);
+  _batchStore[char] = {
+    strokes,
+    width: _batchStore[char]?.width || DEFAULT_WIDTH,
+    kerningLeft: _batchStore[char]?.kerningLeft ?? null,
+    kerningRight: _batchStore[char]?.kerningRight ?? null,
+  };
+}
+
+function flushBatch() {
+  if (_batchStore) {
+    saveGlyphStore(_batchStore);
+  }
+}
+
+function endBatch() {
+  if (_batchStore) {
+    saveGlyphStore(_batchStore);
+    _batchStore = null;
+  }
+}
+
 export {
   GLYPHS,
   getGlyphSet,
@@ -163,4 +194,8 @@ export {
   saveSettings,
   exportProject,
   importProject,
+  beginBatch,
+  batchSaveGlyph,
+  flushBatch,
+  endBatch,
 };

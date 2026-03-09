@@ -1,23 +1,34 @@
-import { GLYPHS, saveGlyph } from './glyphs.js';
+import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch } from './glyphs.js';
 
 const CANVAS_SIZE = 200;
+const FLUSH_INTERVAL = 20;
 
 // --- Public API ---
 
 export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal) {
   const total = chars.length;
   let count = 0;
-  for (let i = 0; i < total; i++) {
-    if (signal.aborted) return { completed: false, count };
-    const char = chars[i];
-    const strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
-    if (strokes.length > 0) {
-      saveGlyph(char, strokes);
-      count++;
+  beginBatch();
+  try {
+    for (let i = 0; i < total; i++) {
+      if (signal.aborted) {
+        endBatch();
+        return { completed: false, count };
+      }
+      const char = chars[i];
+      const strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
+      if (strokes.length > 0) {
+        batchSaveGlyph(char, strokes);
+        count++;
+      }
+      // Flush to localStorage periodically
+      if ((i + 1) % FLUSH_INTERVAL === 0) flushBatch();
+      onProgress(char, strokes, i, total);
+      // Yield to event loop so browser can repaint and process cancel clicks
+      await new Promise(r => setTimeout(r, 0));
     }
-    onProgress(char, strokes, i, total);
-    // Yield to event loop so browser can repaint and process cancel clicks
-    await new Promise(r => setTimeout(r, 0));
+  } finally {
+    endBatch();
   }
   return { completed: true, count };
 }
