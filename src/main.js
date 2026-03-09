@@ -273,7 +273,7 @@ async function init() {
     generateBtn.textContent = 'Cancel (0%)';
 
     const currentSettings = getSettings();
-    await generateGlyphsProgressive(
+    const result = await generateGlyphsProgressive(
       refFontSelect.value,
       activeChars,
       (char, strokes, index, total) => {
@@ -282,6 +282,8 @@ async function init() {
         const glyph = getGlyph(char);
         updateCard(glyphGrid, char, glyph, currentSettings);
         updateProgress();
+        // Update preview every 10 glyphs
+        if ((index + 1) % 10 === 0) preview.render();
       },
       generateController.signal
     );
@@ -289,6 +291,7 @@ async function init() {
     generateController = null;
     generateBtn.textContent = 'Generate';
     preview.render();
+    if (result.error) alert(result.error);
   });
 
   // Export button

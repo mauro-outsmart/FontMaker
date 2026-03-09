@@ -39,7 +39,7 @@ function getGlyphSet(chars = GLYPHS) {
 }
 
 function getGlyph(char) {
-  const store = loadGlyphStore();
+  const store = _batchStore || loadGlyphStore();
   const saved = store[char];
   if (saved) {
     return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH,

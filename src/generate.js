@@ -1,11 +1,13 @@
 import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch } from './glyphs.js';
 
-const CANVAS_SIZE = 200;
+const CANVAS_SIZE = 100;
 const FLUSH_INTERVAL = 20;
 
 // --- Public API ---
 
 export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal) {
+  // Limit to Basic Latin — extended Unicode sets are too slow and overflow storage
+  chars = chars.filter(c => { const code = c.codePointAt(0); return code >= 0x21 && code <= 0x7E; });
   const total = chars.length;
   let count = 0;
   beginBatch();
@@ -22,13 +24,20 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
         count++;
       }
       // Flush to localStorage periodically
-      if ((i + 1) % FLUSH_INTERVAL === 0) flushBatch();
+      if ((i + 1) % FLUSH_INTERVAL === 0) {
+        try {
+          flushBatch();
+        } catch (e) {
+          endBatch();
+          return { completed: false, count, error: 'Storage full — generated ' + count + ' glyphs before running out of space.' };
+        }
+      }
       onProgress(char, strokes, i, total);
       // Yield to event loop so browser can repaint and process cancel clicks
       await new Promise(r => setTimeout(r, 0));
     }
   } finally {
-    endBatch();
+    try { endBatch(); } catch { /* quota exceeded on final flush */ }
   }
   return { completed: true, count };
 }
@@ -184,8 +193,11 @@ function zhangSuenThin(grid, w, h) {
   const g = new Uint8Array(grid);
 
   let changed = true;
-  while (changed) {
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+  while (changed && iterations < MAX_ITERATIONS) {
     changed = false;
+    iterations++;
 
     // Sub-iteration 1
     const toRemove1 = [];
