@@ -1,4 +1,4 @@
-// Brush types: 'normal', 'growing', 'rough'
+// Brush types: 'normal', 'growing', 'rough', 'simple'
 
 export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   if (points.length < 2) return;
@@ -9,6 +9,9 @@ export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
       break;
     case 'rough':
       drawRough(ctx, points, lineWidth, ox, oy, w, h);
+      break;
+    case 'simple':
+      drawSimple(ctx, points, lineWidth, ox, oy, w, h);
       break;
     default:
       drawNormal(ctx, points, lineWidth, ox, oy, w, h);
@@ -100,6 +103,31 @@ function drawRough(ctx, points, lineWidth, ox, oy, w, h) {
   }
   const last = points[points.length - 1];
   ctx.lineTo(ox + last.x * w, oy + last.y * h);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// --- Simple brush: minimal straight line segments ---
+
+function drawSimple(ctx, points, lineWidth, ox, oy, w, h) {
+  // Subsample heavily — keep every 6th point plus first and last
+  const step = 6;
+  const sampled = [points[0]];
+  for (let i = step; i < points.length - 1; i += step) {
+    sampled.push(points[i]);
+  }
+  sampled.push(points[points.length - 1]);
+
+  ctx.save();
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(ox + sampled[0].x * w, oy + sampled[0].y * h);
+  for (let i = 1; i < sampled.length; i++) {
+    ctx.lineTo(ox + sampled[i].x * w, oy + sampled[i].y * h);
+  }
   ctx.stroke();
   ctx.restore();
 }
