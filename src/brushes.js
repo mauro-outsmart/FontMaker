@@ -1,4 +1,4 @@
-// Brush types: 'normal', 'growing', 'rough', 'simple'
+// Brush types: 'normal', 'growing', 'simple'
 
 export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   if (points.length < 2) return;
@@ -6,9 +6,6 @@ export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   switch (brushType) {
     case 'growing':
       drawGrowing(ctx, points, lineWidth, ox, oy, w, h);
-      break;
-    case 'rough':
-      drawRough(ctx, points, lineWidth, ox, oy, w, h);
       break;
     case 'simple':
       drawSimple(ctx, points, lineWidth, ox, oy, w, h);
@@ -78,35 +75,6 @@ function drawGrowing(ctx, points, lineWidth, ox, oy, w, h) {
   ctx.restore();
 }
 
-// --- Rough brush: single pass with jittered points for wobbly edges ---
-
-function drawRough(ctx, points, lineWidth, ox, oy, w, h) {
-  // Jitter amount relative to normalized coords — creates wobbly path
-  const amount = lineWidth * 0.15 / w;
-
-  ctx.save();
-  ctx.lineWidth = lineWidth;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(ox + points[0].x * w, oy + points[0].y * h);
-
-  for (let i = 1; i < points.length - 1; i++) {
-    const ji = jitter(points[i].x, points[i].y, 0, i, amount);
-    const ji1 = jitter(points[i + 1].x, points[i + 1].y, 0, i + 1, amount);
-    const cpx = ox + (points[i].x + ji.x) * w;
-    const cpy = oy + (points[i].y + ji.y) * h;
-    const xc = ox + ((points[i].x + ji.x + points[i + 1].x + ji1.x) / 2) * w;
-    const yc = oy + ((points[i].y + ji.y + points[i + 1].y + ji1.y) / 2) * h;
-    ctx.quadraticCurveTo(cpx, cpy, xc, yc);
-  }
-  const last = points[points.length - 1];
-  ctx.lineTo(ox + last.x * w, oy + last.y * h);
-  ctx.stroke();
-  ctx.restore();
-}
-
 // --- Simple brush: minimal straight line segments ---
 
 function drawSimple(ctx, points, lineWidth, ox, oy, w, h) {
@@ -132,18 +100,3 @@ function drawSimple(ctx, points, lineWidth, ox, oy, w, h) {
   ctx.restore();
 }
 
-// Deterministic pseudo-random jitter based on coordinates and index
-function jitter(x, y, seed, i, amount) {
-  const h1 = hash(x * 10000 + y * 100 + i + seed);
-  const h2 = hash(y * 10000 + x * 100 + i + seed + 9973);
-  return {
-    x: (h1 - 0.5) * 2 * amount,
-    y: (h2 - 0.5) * 2 * amount,
-  };
-}
-
-// Simple hash -> 0-1
-function hash(n) {
-  let x = Math.sin(n) * 43758.5453;
-  return x - Math.floor(x);
-}
