@@ -4,9 +4,9 @@ const CANVAS_SIZE = 200;
 
 // --- Public API ---
 
-export function generateAllGlyphs(referenceFont) {
+export function generateAllGlyphs(referenceFont, chars = GLYPHS) {
   const entries = [];
-  for (const char of GLYPHS) {
+  for (const char of chars) {
     const strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
     if (strokes.length > 0) {
       entries.push({ char, strokes });

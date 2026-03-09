@@ -26,9 +26,9 @@ function makeDefaultGlyph(char) {
   return { char, strokes: [], width: DEFAULT_WIDTH, kerningLeft: null, kerningRight: null };
 }
 
-function getGlyphSet() {
+function getGlyphSet(chars = GLYPHS) {
   const store = loadGlyphStore();
-  return GLYPHS.map((char) => {
+  return chars.map((char) => {
     const saved = store[char];
     if (saved) {
       return { char, strokes: saved.strokes || [], width: saved.width || DEFAULT_WIDTH,
@@ -88,12 +88,18 @@ function isGlyphDrawn(char) {
   return !!(saved && saved.strokes && saved.strokes.length > 0);
 }
 
-function getAllGlyphs() {
-  return getGlyphSet();
+function getAllGlyphs(chars = GLYPHS) {
+  return getGlyphSet(chars);
 }
 
-function getDrawnCount() {
+function getDrawnCount(chars = null) {
   const store = loadGlyphStore();
+  if (chars) {
+    return chars.filter((ch) => {
+      const g = store[ch];
+      return g && g.strokes && g.strokes.length > 0;
+    }).length;
+  }
   return Object.values(store).filter((g) => g.strokes && g.strokes.length > 0).length;
 }
 

@@ -46,4 +46,59 @@ async function getSystemFonts() {
   return all.sort();
 }
 
-export { getSystemFonts, FALLBACK_FONTS };
+// Unicode ranges to scan for font glyph detection
+const UNICODE_RANGES = [
+  [0x0021, 0x007E],  // Basic Latin (printable)
+  [0x00A1, 0x00FF],  // Latin-1 Supplement
+  [0x0100, 0x017F],  // Latin Extended-A
+  [0x0180, 0x024F],  // Latin Extended-B
+  [0x0370, 0x03FF],  // Greek and Coptic
+  [0x0400, 0x04FF],  // Cyrillic
+  [0x2010, 0x2027],  // General Punctuation (subset)
+  [0x2030, 0x205E],  // General Punctuation (subset 2)
+  [0x20A0, 0x20CF],  // Currency Symbols
+  [0x2150, 0x218F],  // Number Forms
+  [0x2190, 0x21FF],  // Arrows
+];
+
+const _fontCharCache = new Map();
+
+async function detectFontChars(fontName) {
+  if (_fontCharCache.has(fontName)) return _fontCharCache.get(fontName);
+
+  // Ensure font is loaded (important for Google Fonts)
+  try {
+    await document.fonts.load(`24px "${fontName}"`);
+  } catch { /* ignore */ }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 50;
+  canvas.height = 50;
+  const ctx = canvas.getContext('2d');
+  const size = 24;
+
+  const chars = [];
+  for (const [start, end] of UNICODE_RANGES) {
+    for (let code = start; code <= end; code++) {
+      const char = String.fromCodePoint(code);
+
+      // Measure with target font + serif fallback
+      ctx.font = `${size}px "${fontName}", serif`;
+      const w1 = ctx.measureText(char).width;
+
+      // Measure with target font + monospace fallback
+      ctx.font = `${size}px "${fontName}", monospace`;
+      const w2 = ctx.measureText(char).width;
+
+      // If both widths match and > 0, font has the glyph
+      if (w1 === w2 && w1 > 0) {
+        chars.push(char);
+      }
+    }
+  }
+
+  _fontCharCache.set(fontName, chars);
+  return chars;
+}
+
+export { getSystemFonts, FALLBACK_FONTS, detectFontChars };

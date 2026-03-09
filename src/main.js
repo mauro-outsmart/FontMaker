@@ -1,4 +1,4 @@
-import { getSystemFonts } from './fonts.js';
+import { getSystemFonts, detectFontChars } from './fonts.js';
 import { getGlyphSet, getGlyph, getSettings, saveSettings, getDrawnCount, GLYPHS, importProject, clearAllGlyphs, resetAllKerning } from './glyphs.js';
 import { renderGrid, updateCard, refreshAllThumbnails, refreshAllThumbnailsBoilFrame } from './grid.js';
 import { Editor } from './editor.js';
@@ -9,6 +9,8 @@ import { exportHTML } from './html-export.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
 import { generateAllGlyphs } from './generate.js';
 import { exportWebFont } from './webfont-export.js';
+
+let activeChars = GLYPHS;
 
 async function init() {
   // Load settings
@@ -24,6 +26,8 @@ async function init() {
   // Load system fonts
   const fonts = await getSystemFonts();
   const refFontSelect = document.getElementById('refFont');
+  // "None" option is already in HTML; select it if no saved reference font
+  if (!settings.referenceFont) refFontSelect.value = '';
   for (const font of fonts) {
     const option = document.createElement('option');
     option.value = font;
@@ -104,13 +108,31 @@ async function init() {
 
   // Render glyph grid
   const glyphGrid = document.getElementById('glyphGrid');
-  const glyphs = getGlyphSet();
 
-  refFontSelect.addEventListener('change', () => {
+  function openGlyph(char) {
+    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
+  }
+
+  function rebuildGrid() {
+    renderGrid(glyphGrid, getGlyphSet(activeChars), getSettings(), openGlyph);
+    updateProgress();
+  }
+
+  async function updateCharSet(fontName) {
+    if (!fontName) {
+      activeChars = GLYPHS;
+    } else {
+      activeChars = await detectFontChars(fontName);
+    }
+    editor.setGlyphChars(activeChars);
+    rebuildGrid();
+  }
+
+  refFontSelect.addEventListener('change', async () => {
     saveSettings({ referenceFont: refFontSelect.value });
     editor.updateReferenceFont(refFontSelect.value);
     preview.setReferenceFont(refFontSelect.value);
-    refreshAllThumbnails(glyphGrid, getGlyphSet(), getSettings());
+    await updateCharSet(refFontSelect.value);
   });
 
   strokeWidthInput.addEventListener('input', () => {
@@ -118,14 +140,14 @@ async function init() {
     saveSettings({ strokeWidth: parseInt(strokeWidthInput.value) });
     editor.updateStrokeWidth(parseInt(strokeWidthInput.value));
     preview.setStrokeWidth(parseInt(strokeWidthInput.value));
-    refreshAllThumbnails(glyphGrid, getGlyphSet(), getSettings());
+    refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
   });
 
   brushTypeSelect.addEventListener('change', () => {
     saveSettings({ brushType: brushTypeSelect.value });
     editor.updateBrushType(brushTypeSelect.value);
     preview.setBrushType(brushTypeSelect.value);
-    refreshAllThumbnails(glyphGrid, getGlyphSet(), getSettings());
+    refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
   });
 
   kerningInput.addEventListener('input', () => {
@@ -204,7 +226,7 @@ async function init() {
     saveSettings({ lineBoil: lineBoilCheckbox.checked });
     updateAnimControls();
     if (!lineBoilCheckbox.checked) {
-      refreshAllThumbnails(glyphGrid, getGlyphSet(), getSettings());
+      refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
       preview.render();
     }
   });
@@ -213,11 +235,8 @@ async function init() {
     updateAnimControls();
   });
 
-  // Render grid (creates progress badge), then update count
-  renderGrid(glyphGrid, glyphs, settings, (char) => {
-    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
-  });
-  updateProgress();
+  // Detect initial char set and render grid
+  await updateCharSet(settings.referenceFont);
 
   // Reset kerning button
   document.getElementById('resetKerningBtn').addEventListener('click', () => {
@@ -234,20 +253,14 @@ async function init() {
   document.getElementById('clearAllBtn').addEventListener('click', () => {
     if (!confirm('Clear all glyphs? This cannot be undone.')) return;
     clearAllGlyphs();
-    renderGrid(glyphGrid, getGlyphSet(), getSettings(), (char) => {
-      editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
-    });
-    updateProgress();
+    rebuildGrid();
   });
 
   // Generate button
   document.getElementById('generateBtn').addEventListener('click', () => {
     if (!confirm('Generate all glyphs from reference font? This will overwrite existing glyphs.')) return;
-    generateAllGlyphs(refFontSelect.value);
-    renderGrid(glyphGrid, getGlyphSet(), getSettings(), (char) => {
-      editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
-    });
-    updateProgress();
+    generateAllGlyphs(refFontSelect.value, activeChars);
+    rebuildGrid();
     preview.render();
   });
 
@@ -305,10 +318,7 @@ async function init() {
           preview.setKerning(s.kerning);
           preview.setStrokeWidth(s.strokeWidth);
           preview.setBrushType(s.brushType || 'normal');
-          renderGrid(glyphGrid, getGlyphSet(), s, (char) => {
-            editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
-          });
-          updateProgress();
+          rebuildGrid();
         }
       } catch {
         // Invalid JSON
@@ -340,7 +350,7 @@ async function init() {
         lastBoilAdvance = timestamp;
 
         const currentSettings = getSettings();
-        const glyphs = getGlyphSet();
+        const glyphs = getGlyphSet(activeChars);
 
         const getCustomStrokes = (char, fallbackStrokes) => {
           const frames = getBoilFrames(char, fallbackStrokes);
@@ -367,8 +377,8 @@ async function init() {
 }
 
 function updateProgress() {
-  const count = getDrawnCount();
-  document.getElementById('progressCount').textContent = count + ' / ' + GLYPHS.length;
+  const count = getDrawnCount(activeChars);
+  document.getElementById('progressCount').textContent = count + ' / ' + activeChars.length;
   const noGlyphs = count === 0;
   document.getElementById('exportBtn').disabled = noGlyphs;
   document.getElementById('exportJsBtn').disabled = noGlyphs;

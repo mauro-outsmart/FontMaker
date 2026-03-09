@@ -25,6 +25,7 @@ export class Editor {
     this.kerningRight = 0;
     this.kerningEdited = false;
     this.draggingLine = null;
+    this._glyphChars = GLYPHS;
 
     this.engine = new DrawingEngine(this.canvas);
     this.engine.onAfterRender = () => this._renderKerningOverlay();
@@ -80,7 +81,7 @@ export class Editor {
 
   open(char, referenceFont, strokeWidth) {
     this.currentChar = char;
-    this.currentIndex = GLYPHS.indexOf(char);
+    this.currentIndex = this._glyphChars.indexOf(char);
     this.referenceFont = referenceFont;
     this.strokeWidth = strokeWidth;
     this.label.textContent = char;
@@ -168,15 +169,19 @@ export class Editor {
   prev() {
     if (this.currentIndex <= 0) return;
     this._autoSave();
-    const newChar = GLYPHS[this.currentIndex - 1];
+    const newChar = this._glyphChars[this.currentIndex - 1];
     this.open(newChar, this.referenceFont, this.strokeWidth);
   }
 
   next() {
-    if (this.currentIndex >= GLYPHS.length - 1) return;
+    if (this.currentIndex >= this._glyphChars.length - 1) return;
     this._autoSave();
-    const newChar = GLYPHS[this.currentIndex + 1];
+    const newChar = this._glyphChars[this.currentIndex + 1];
     this.open(newChar, this.referenceFont, this.strokeWidth);
+  }
+
+  setGlyphChars(chars) {
+    this._glyphChars = chars;
   }
 
   _autoSave() {
