@@ -7,7 +7,7 @@ import { exportFont } from './font-export.js';
 import { exportGIF } from './gif-export.js';
 import { exportHTML } from './html-export.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
-import { generateAllGlyphs } from './generate.js';
+import { generateGlyphsProgressive } from './generate.js';
 import { exportWebFont } from './webfont-export.js';
 
 let activeChars = GLYPHS;
@@ -257,10 +257,37 @@ async function init() {
   });
 
   // Generate button
-  document.getElementById('generateBtn').addEventListener('click', () => {
+  const generateBtn = document.getElementById('generateBtn');
+  let generateController = null;
+
+  generateBtn.addEventListener('click', async () => {
+    // If generating, cancel
+    if (generateController) {
+      generateController.abort();
+      return;
+    }
+
     if (!confirm('Generate all glyphs from reference font? This will overwrite existing glyphs.')) return;
-    generateAllGlyphs(refFontSelect.value, activeChars);
-    rebuildGrid();
+
+    generateController = new AbortController();
+    generateBtn.textContent = 'Cancel (0%)';
+
+    const currentSettings = getSettings();
+    await generateGlyphsProgressive(
+      refFontSelect.value,
+      activeChars,
+      (char, strokes, index, total) => {
+        const pct = Math.round((index + 1) / total * 100);
+        generateBtn.textContent = 'Cancel (' + pct + '%)';
+        const glyph = getGlyph(char);
+        updateCard(glyphGrid, char, glyph, currentSettings);
+        updateProgress();
+      },
+      generateController.signal
+    );
+
+    generateController = null;
+    generateBtn.textContent = 'Generate';
     preview.render();
   });
 

@@ -4,18 +4,22 @@ const CANVAS_SIZE = 200;
 
 // --- Public API ---
 
-export function generateAllGlyphs(referenceFont, chars = GLYPHS) {
-  const entries = [];
-  for (const char of chars) {
+export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal) {
+  const total = chars.length;
+  let count = 0;
+  for (let i = 0; i < total; i++) {
+    if (signal.aborted) return { completed: false, count };
+    const char = chars[i];
     const strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
     if (strokes.length > 0) {
-      entries.push({ char, strokes });
+      saveGlyph(char, strokes);
+      count++;
     }
+    onProgress(char, strokes, i, total);
+    // Yield to event loop so browser can repaint and process cancel clicks
+    await new Promise(r => setTimeout(r, 0));
   }
-  // Batch save
-  for (const { char, strokes } of entries) {
-    saveGlyph(char, strokes);
-  }
+  return { completed: true, count };
 }
 
 function generateGlyph(char, referenceFont, size) {
