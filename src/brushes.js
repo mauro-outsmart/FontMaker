@@ -78,8 +78,8 @@ function drawGrowing(ctx, points, lineWidth, ox, oy, w, h) {
 // --- Simple brush: minimal straight line segments ---
 
 function drawSimple(ctx, points, lineWidth, ox, oy, w, h) {
-  // Aggressive subsample — keep every 20th point plus first and last
-  const step = 20;
+  // Adaptive subsample — keep ~4-5 points per stroke regardless of length
+  const step = Math.max(3, Math.floor(points.length / 4));
   const sampled = [points[0]];
   for (let i = step; i < points.length - 1; i += step) {
     sampled.push(points[i]);
