@@ -1,5 +1,5 @@
 import { getSystemFonts, detectFontChars } from './fonts.js';
-import { getGlyphSet, getGlyph, getSettings, saveSettings, getDrawnCount, GLYPHS, importProject, clearAllGlyphs, resetAllKerning } from './glyphs.js';
+import { getGlyphSet, getGlyph, getSettings, saveSettings, getDrawnCount, GLYPHS, importProject, clearAllGlyphs, resetAllKerning, autoKernAll } from './glyphs.js';
 import { renderGrid, updateCard, refreshAllThumbnails, refreshAllThumbnailsBoilFrame } from './grid.js';
 import { Editor } from './editor.js';
 import { Preview } from './preview.js';
@@ -263,6 +263,14 @@ async function init() {
     saveSettings({ kerning: 0 });
     preview.setKerning(0);
     resetAllKerning();
+    preview.render();
+  });
+
+  // Auto kerning button — sets per-glyph kerning so each glyph has equal
+  // visual padding on its left and right based on its actual extent.
+  document.getElementById('autoKerningBtn').addEventListener('click', () => {
+    autoKernAll();
+    refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
     preview.render();
   });
 

@@ -76,6 +76,30 @@ function resetAllKerning() {
   saveGlyphStore(store);
 }
 
+// Compute per-glyph kerning so each drawn glyph has roughly equal visual
+// padding on its left and right within the advance box. Uses the glyph's own
+// horizontal extent — narrow letters (i, l) get tightened in, wide ones (M, W)
+// get extra room. The user's global kerning slider stacks on top.
+function autoKernAll(sideBearing = 60) {
+  const store = loadGlyphStore();
+  const baseAdvance = 650; // matches font-export and preview
+  for (const char of Object.keys(store)) {
+    const g = store[char];
+    if (!g.strokes || g.strokes.length === 0) continue;
+    let minX = Infinity, maxX = -Infinity;
+    for (const stroke of g.strokes) {
+      for (const p of stroke) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+      }
+    }
+    if (!isFinite(minX) || !isFinite(maxX)) continue;
+    g.kerningLeft = Math.round(sideBearing - 1000 * minX);
+    g.kerningRight = Math.round(1000 * maxX + sideBearing - baseAdvance);
+  }
+  saveGlyphStore(store);
+}
+
 function clearGlyph(char) {
   const store = loadGlyphStore();
   delete store[char];
@@ -185,6 +209,7 @@ export {
   saveGlyph,
   saveGlyphKerning,
   resetAllKerning,
+  autoKernAll,
   clearGlyph,
   clearAllGlyphs,
   isGlyphDrawn,
