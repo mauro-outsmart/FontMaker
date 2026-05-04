@@ -278,13 +278,20 @@ async function init() {
     saveSettings({ kerning: 0 });
     preview.setKerning(0);
     resetAllKerning();
+    // Re-enable the global kerning slider — auto-kerning is no longer in effect
+    kerningInput.disabled = false;
+    document.getElementById('controlKerning').classList.remove('control--disabled');
     preview.render();
   });
 
   // Auto kerning button — sets per-glyph kerning so each glyph has equal
   // visual padding on its left and right based on its actual extent.
+  // Per-glyph kerning takes over from the global slider, so disable the slider
+  // until the user resets.
   document.getElementById('autoKerningBtn').addEventListener('click', () => {
     autoKernAll();
+    kerningInput.disabled = true;
+    document.getElementById('controlKerning').classList.add('control--disabled');
     refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
     preview.render();
   });

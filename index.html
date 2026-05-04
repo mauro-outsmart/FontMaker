@@ -22,9 +22,9 @@
         <input type="text" class="font-name-input" id="fontName" value="My Font" spellcheck="false" autocomplete="off">
         <div class="top-bar__spacer"></div>
         <button class="btn btn--ghost" id="importBtn">Import</button>
-        <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
         <button class="btn btn--primary" id="exportBtn">Export .otf</button>
         <button class="btn btn--primary" id="exportJsBtn">Export .js</button>
+        <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
         <input type="file" id="importFile" accept=".json,.ttf,.otf,.woff,.woff2" hidden>
       </div>
       <div class="top-bar__row top-bar__tabs">
@@ -39,7 +39,7 @@
         <button class="btn btn--ghost" id="importFontMineBtn">Import font</button>
         <span class="top-bar__hint">draw 2 glyphs and then tap generate</span>
         <div class="top-bar__spacer"></div>
-        <button class="btn btn--ghost" id="generateMineBtn" disabled>Generate</button>
+        <button class="btn btn--outline" id="generateMineBtn" disabled>Generate</button>
       </div>
       <div class="top-bar__row top-bar__row--section" id="rowOther" hidden>
         <label class="control">
@@ -63,10 +63,9 @@
           <span class="control__value" id="strokeWidthValue">8px</span>
         </label>
         <div class="top-bar__spacer"></div>
-        <button class="btn btn--ghost" id="generateBtn" disabled>Generate</button>
+        <button class="btn btn--outline" id="generateBtn" disabled>Generate</button>
       </div>
       <div class="top-bar__row top-bar__row--section">
-        <span class="top-bar__section-label">EXTRA</span>
         <label class="control" id="controlKerning">
           <span class="control__label">Kerning</span>
           <input type="range" id="kerning" min="-200" max="200" value="0" step="10" class="control__range">
@@ -89,6 +88,7 @@
           <input type="range" id="animSpeed" min="0.25" max="3" value="1" step="0.25" class="control__range" disabled>
           <span class="control__value" id="animSpeedValue">1x</span>
         </label>
+        <div class="top-bar__spacer"></div>
         <button class="btn btn--primary anim-control" id="exportGifBtn" disabled>Export GIF</button>
         <button class="btn btn--primary anim-control" id="exportHtmlBtn" disabled>Export HTML</button>
       </div>
