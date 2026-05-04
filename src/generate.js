@@ -1,4 +1,4 @@
-import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch } from './glyphs.js';
+import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch, getGlyph } from './glyphs.js';
 import { extractContours, chaikin, simplify, fixWinding } from './contour.js';
 
 const CANVAS_SIZE = 100;
@@ -7,7 +7,7 @@ const FLUSH_INTERVAL = 20;
 
 // --- Public API ---
 
-export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal') {
+export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal', skipExisting = false) {
   // Limit to Basic Latin — extended Unicode sets are too slow and overflow storage
   chars = chars.filter(c => { const code = c.codePointAt(0); return code >= 0x21 && code <= 0x7E; });
   const total = chars.length;
@@ -20,6 +20,16 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
         return { completed: false, count };
       }
       const char = chars[i];
+      // When skipExisting is on, leave any glyph that already has strokes
+      // untouched. Lets "Generate" fill in just the missing letters.
+      if (skipExisting) {
+        const existing = getGlyph(char);
+        if (existing && existing.strokes && existing.strokes.length > 0) {
+          onProgress(char, existing.strokes, i, total);
+          await new Promise(r => setTimeout(r, 0));
+          continue;
+        }
+      }
       let strokes;
       if (brushType === 'original') {
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 0);

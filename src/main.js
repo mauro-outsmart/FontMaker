@@ -26,14 +26,20 @@ async function init() {
   // Load system fonts
   const fonts = await getSystemFonts();
   const refFontSelect = document.getElementById('refFont');
+  const refFontMineSelect = document.getElementById('refFontMine');
   // "None" option is already in HTML; select it if no saved reference font
-  if (!settings.referenceFont) refFontSelect.value = '';
+  if (!settings.referenceFont) {
+    refFontSelect.value = '';
+    refFontMineSelect.value = '';
+  }
   for (const font of fonts) {
-    const option = document.createElement('option');
-    option.value = font;
-    option.textContent = font;
-    if (font === settings.referenceFont) option.selected = true;
-    refFontSelect.appendChild(option);
+    for (const sel of [refFontSelect, refFontMineSelect]) {
+      const option = document.createElement('option');
+      option.value = font;
+      option.textContent = font;
+      if (font === settings.referenceFont) option.selected = true;
+      sel.appendChild(option);
+    }
   }
   // Stroke width
   const strokeWidthInput = document.getElementById('strokeWidth');
@@ -131,19 +137,24 @@ async function init() {
   }
 
   let prevRefFont = refFontSelect.value;
-  refFontSelect.addEventListener('change', async () => {
+  async function handleRefFontChange(triggeredFrom) {
+    const newValue = triggeredFrom.value;
     if (getDrawnCount(activeChars) > 0) {
       if (!confirm('Switching reference font will clear your drawn glyphs. Continue?')) {
         refFontSelect.value = prevRefFont;
+        refFontMineSelect.value = prevRefFont;
         return;
       }
       clearAllGlyphs();
     }
-    prevRefFont = refFontSelect.value;
-    saveSettings({ referenceFont: refFontSelect.value });
-    editor.updateReferenceFont(refFontSelect.value);
-    preview.setReferenceFont(refFontSelect.value);
-    await updateCharSet(refFontSelect.value);
+    // Keep both dropdowns in sync
+    refFontSelect.value = newValue;
+    refFontMineSelect.value = newValue;
+    prevRefFont = newValue;
+    saveSettings({ referenceFont: newValue });
+    editor.updateReferenceFont(newValue);
+    preview.setReferenceFont(newValue);
+    await updateCharSet(newValue);
     // Reset style selection so user picks one for the new font
     brushTypeSelect.value = '';
     saveSettings({ brushType: '' });
@@ -151,7 +162,9 @@ async function init() {
     preview.setBrushType('');
     updateStyleDependentControls();
     preview.render();
-  });
+  }
+  refFontSelect.addEventListener('change', () => handleRefFontChange(refFontSelect));
+  refFontMineSelect.addEventListener('change', () => handleRefFontChange(refFontMineSelect));
 
   strokeWidthInput.addEventListener('input', () => {
     strokeWidthValue.textContent = strokeWidthInput.value + 'px';
@@ -306,17 +319,15 @@ async function init() {
   }
   updateStyleDependentControls();
 
-  generateBtn.addEventListener('click', async () => {
-    // If generating, cancel
+  async function runGenerate({ btn, brushType, skipExisting, confirmText }) {
     if (generateController) {
       generateController.abort();
       return;
     }
-
-    if (!confirm('Generate all glyphs from reference font? This will overwrite existing glyphs.')) return;
+    if (!confirm(confirmText)) return;
 
     generateController = new AbortController();
-    generateBtn.textContent = 'Cancel (0%)';
+    btn.textContent = 'Cancel (0%)';
 
     const currentSettings = getSettings();
     const result = await generateGlyphsProgressive(
@@ -324,22 +335,60 @@ async function init() {
       activeChars,
       (char, strokes, index, total) => {
         const pct = Math.round((index + 1) / total * 100);
-        generateBtn.textContent = 'Cancel (' + pct + '%)';
+        btn.textContent = 'Cancel (' + pct + '%)';
         const glyph = getGlyph(char);
         updateCard(glyphGrid, char, glyph, currentSettings);
         updateProgress();
-        // Update preview every 10 glyphs
         if ((index + 1) % 10 === 0) preview.render();
       },
       generateController.signal,
-      brushTypeSelect.value
+      brushType,
+      skipExisting
     );
 
     generateController = null;
-    generateBtn.textContent = 'Generate';
+    btn.textContent = 'Generate';
     preview.render();
     if (result.error) alert(result.error);
+  }
+
+  generateBtn.addEventListener('click', () => runGenerate({
+    btn: generateBtn,
+    brushType: brushTypeSelect.value,
+    skipExisting: false,
+    confirmText: 'Generate all glyphs from reference font? This will overwrite existing glyphs.',
+  }));
+
+  // YOUR FONT generate: fills in missing glyphs only, using the user's
+  // hand-drawn aesthetic (Handdrawn round). Existing user-drawn glyphs are
+  // preserved.
+  const generateMineBtn = document.getElementById('generateMineBtn');
+  generateMineBtn.addEventListener('click', async () => {
+    if (!refFontSelect.value) {
+      alert('Pick a reference font first.');
+      return;
+    }
+    // Force a handdrawn style for both generation and rendering so generated
+    // glyphs match user-drawn ones visually.
+    if (brushTypeSelect.value !== 'normal' && brushTypeSelect.value !== 'growing') {
+      brushTypeSelect.value = 'normal';
+      brushTypeSelect.dispatchEvent(new Event('change'));
+    }
+    await runGenerate({
+      btn: generateMineBtn,
+      brushType: brushTypeSelect.value,
+      skipExisting: true,
+      confirmText: 'Fill in missing glyphs from the reference font? Glyphs you have drawn will be preserved.',
+    });
   });
+
+  // Enable YOUR FONT generate whenever a reference is selected
+  function updateGenerateMineAvailability() {
+    generateMineBtn.disabled = !refFontSelect.value;
+  }
+  updateGenerateMineAvailability();
+  refFontSelect.addEventListener('change', updateGenerateMineAvailability);
+  refFontMineSelect.addEventListener('change', updateGenerateMineAvailability);
 
   // Export button
   const exportBtn = document.getElementById('exportBtn');
