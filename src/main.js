@@ -316,9 +316,37 @@ async function init() {
   document.getElementById('importBtn').addEventListener('click', () => {
     importFileInput.click();
   });
-  importFileInput.addEventListener('change', (e) => {
+  importFileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+    if (['ttf', 'otf', 'woff', 'woff2'].includes(ext)) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const base = file.name.replace(/\.[^.]+$/, '');
+        let family = base;
+        let n = 2;
+        while (Array.from(refFontSelect.options).some((o) => o.value === family)) {
+          family = base + ' ' + n++;
+        }
+        const fontFace = new FontFace(family, buffer);
+        await fontFace.load();
+        document.fonts.add(fontFace);
+
+        const opt = document.createElement('option');
+        opt.value = family;
+        opt.textContent = family;
+        refFontSelect.appendChild(opt);
+        refFontSelect.value = family;
+        refFontSelect.dispatchEvent(new Event('change'));
+      } catch (err) {
+        alert('Could not load font: ' + err.message);
+      }
+      importFileInput.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
