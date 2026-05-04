@@ -1,4 +1,4 @@
-import { drawStroke, drawGlyph } from './brushes.js';
+import { drawStroke, drawGlyph, isOriginalStyle } from './brushes.js';
 
 export class DrawingEngine {
   constructor(canvas, options = {}) {
@@ -88,9 +88,14 @@ export class DrawingEngine {
 
     ctx.clearRect(0, 0, w, h);
 
-    this._drawReference();
+    const isOriginal = isOriginalStyle(this.brushType);
 
-    if (this.brushType === 'original') {
+    // Skip the faded reference glyph for Original/italic — the filled glyph
+    // IS the reference, and overlaying the upright ghost behind a sheared
+    // glyph creates visible halos.
+    if (!isOriginal) this._drawReference();
+
+    if (isOriginal) {
       // Filled-glyph rendering needs all contours in one path
       const all = this.currentStroke && this.currentStroke.length >= 2
         ? [...this.strokes, this.currentStroke]
@@ -98,7 +103,7 @@ export class DrawingEngine {
       const { squareSize, extraPx } = this.getLayout();
       ctx.save();
       ctx.strokeStyle = this.strokeColor;
-      drawGlyph(ctx, all, this.strokeWidth * (squareSize / 200), 'original', extraPx, 0, squareSize, squareSize);
+      drawGlyph(ctx, all, this.strokeWidth * (squareSize / 200), this.brushType, extraPx, 0, squareSize, squareSize);
       ctx.restore();
     } else {
       // Draw completed strokes

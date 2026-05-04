@@ -1,4 +1,4 @@
-import { drawGlyph } from './brushes.js';
+import { drawGlyph, isOriginalStyle } from './brushes.js';
 
 export function renderGrid(container, glyphs, settings, onGlyphClick) {
   // Preserve progress badge if it exists
@@ -56,8 +56,10 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Draw reference glyph faded
-  if (settings.referenceFont) {
+  // Draw reference glyph faded — skip for Original/italic, where the filled
+  // contour glyph already IS the reference.
+  const brushType = settings.brushType || 'normal';
+  if (settings.referenceFont && !isOriginalStyle(brushType)) {
     ctx.save();
     const fontSize = h * 0.7;
     ctx.font = `${fontSize}px "${settings.referenceFont}"`;
@@ -72,7 +74,6 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
   const strokesToDraw = customStrokes || glyph.strokes;
   if (strokesToDraw && strokesToDraw.length) {
     const lw = (settings.strokeWidth || 8) * (w / 200);
-    const brushType = settings.brushType || 'normal';
     ctx.save();
     ctx.strokeStyle = '#fff';
     drawGlyph(ctx, strokesToDraw, lw, brushType, 0, 0, w, h);
