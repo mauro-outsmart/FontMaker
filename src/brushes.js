@@ -1,4 +1,4 @@
-// Brush types: 'normal', 'growing', 'simple', 'original'
+// Brush types: 'normal' (Handdrawn round), 'growing' (Handdrawn paint), 'original'
 
 export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   if (points.length < 2) return;
@@ -7,9 +7,6 @@ export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   switch (brushType) {
     case 'growing':
       drawGrowing(ctx, points, lineWidth, ox, oy, w, h);
-      break;
-    case 'simple':
-      drawSimple(ctx, points, lineWidth, ox, oy, w, h);
       break;
     default:
       drawNormal(ctx, points, lineWidth, ox, oy, w, h);
@@ -103,31 +100,6 @@ function drawGrowing(ctx, points, lineWidth, ox, oy, w, h) {
     ctx.stroke();
   }
 
-  ctx.restore();
-}
-
-// --- Simple brush: minimal straight line segments ---
-
-function drawSimple(ctx, points, lineWidth, ox, oy, w, h) {
-  // Adaptive subsample — keep ~4-5 points per stroke regardless of length
-  const step = Math.max(3, Math.floor(points.length / 4));
-  const sampled = [points[0]];
-  for (let i = step; i < points.length - 1; i += step) {
-    sampled.push(points[i]);
-  }
-  sampled.push(points[points.length - 1]);
-
-  ctx.save();
-  ctx.lineWidth = lineWidth;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(ox + sampled[0].x * w, oy + sampled[0].y * h);
-  for (let i = 1; i < sampled.length; i++) {
-    ctx.lineTo(ox + sampled[i].x * w, oy + sampled[i].y * h);
-  }
-  ctx.stroke();
   ctx.restore();
 }
 

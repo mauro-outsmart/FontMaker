@@ -142,15 +142,14 @@ async function init() {
     editor.updateReferenceFont(refFontSelect.value);
     preview.setReferenceFont(refFontSelect.value);
     await updateCharSet(refFontSelect.value);
+    // Reset style selection so user picks one for the new font
+    brushTypeSelect.value = '';
+    saveSettings({ brushType: '' });
+    editor.updateBrushType('');
+    preview.setBrushType('');
+    updateStyleDependentControls();
     preview.render();
   });
-
-  function updateStrokeAvailability() {
-    const isOriginal = brushTypeSelect.value === 'original';
-    strokeWidthInput.disabled = isOriginal;
-    document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal);
-  }
-  updateStrokeAvailability();
 
   strokeWidthInput.addEventListener('input', () => {
     strokeWidthValue.textContent = strokeWidthInput.value + 'px';
@@ -165,7 +164,7 @@ async function init() {
     editor.updateBrushType(brushTypeSelect.value);
     preview.setBrushType(brushTypeSelect.value);
     refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
-    updateStrokeAvailability();
+    updateStyleDependentControls();
   });
 
   kerningInput.addEventListener('input', () => {
@@ -277,6 +276,25 @@ async function init() {
   // Generate button
   const generateBtn = document.getElementById('generateBtn');
   let generateController = null;
+
+  function updateStyleDependentControls() {
+    const v = brushTypeSelect.value;
+    const isOriginal = v === 'original';
+    const noStyle = v === '';
+    strokeWidthInput.disabled = isOriginal || noStyle;
+    document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal || noStyle);
+    const revealLabel = revealAnimCheckbox.closest('label');
+    if (revealLabel) {
+      revealLabel.classList.toggle('control--disabled', isOriginal);
+      revealAnimCheckbox.disabled = isOriginal;
+      if (isOriginal && revealAnimCheckbox.checked) {
+        revealAnimCheckbox.checked = false;
+        updateAnimControls();
+      }
+    }
+    generateBtn.disabled = noStyle;
+  }
+  updateStyleDependentControls();
 
   generateBtn.addEventListener('click', async () => {
     // If generating, cancel
