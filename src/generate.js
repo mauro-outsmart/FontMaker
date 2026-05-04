@@ -326,10 +326,9 @@ function traceFrom(g, w, h, sx, sy, visited) {
     cx = nx;
     cy = ny;
 
-    // Stop at junctions (3+ neighbors among unvisited + current path)
+    // Stop at junctions; let other traces handle remaining branches
     const nc = neighborCount(g, nx, ny, w, h);
     if (nc >= 3) {
-      // Allow junction to be re-visited by other traces
       visited[ny * w + nx] = 0;
       break;
     }
@@ -348,9 +347,17 @@ function subsample(stroke, step) {
   return result;
 }
 
+// Drop tiny stroke fragments — short serif nubs and noise produced at junctions
+const MIN_STROKE_PX = 5;
+
+function pushIfLongEnough(strokes, stroke) {
+  if (stroke.length < MIN_STROKE_PX) return;
+  strokes.push(subsample(stroke, 4));
+}
+
 function traceSkeletonStrokes(grid, w, h) {
   const visited = new Uint8Array(w * h);
-  const strokes = [];
+  const rawStrokes = [];
 
   // Find endpoints (1 neighbor) — natural stroke start/end
   const endpoints = [];
@@ -363,32 +370,97 @@ function traceSkeletonStrokes(grid, w, h) {
     }
   }
 
-  // Trace from each endpoint
+  // Trace from each endpoint, then loops
   for (const ep of endpoints) {
     if (visited[ep.y * w + ep.x]) continue;
-    const stroke = traceFrom(grid, w, h, ep.x, ep.y, visited);
-    if (stroke.length >= 2) strokes.push(subsample(stroke, 3));
+    const s = traceFrom(grid, w, h, ep.x, ep.y, visited);
+    if (s.length >= 2) rawStrokes.push(s);
   }
-
-  // Handle remaining loops (unvisited skeleton pixels)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (!grid[y * w + x] || visited[y * w + x]) continue;
-      const stroke = traceFrom(grid, w, h, x, y, visited);
-      if (stroke.length >= 2) strokes.push(subsample(stroke, 3));
+      const s = traceFrom(grid, w, h, x, y, visited);
+      if (s.length >= 2) rawStrokes.push(s);
     }
   }
-
-  // Handle isolated pixels (dots) — create tiny 2-point strokes
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (!grid[y * w + x] || visited[y * w + x]) continue;
-      strokes.push([{ x, y }, { x: x + 0.5, y: y + 0.5 }]);
-      visited[y * w + x] = 1;
-    }
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i] && !visited[i]) visited[i] = 1;
   }
 
-  return strokes;
+  // Merge fragments that meet at the same junction with aligned tangents.
+  // This produces fewer, longer strokes — fonts like Playfair stop dropping
+  // into a heap of tiny fragments around serifs.
+  const merged = mergeAlignedAtJunctions(rawStrokes);
+
+  // Drop noise nubs and subsample what's left.
+  const result = [];
+  for (const s of merged) {
+    if (s.length < MIN_STROKE_PX) continue;
+    result.push(subsample(s, 4));
+  }
+  return result;
+}
+
+function endpointDir(stroke, atStart) {
+  // Tangent direction pointing AWAY from the endpoint (into the stroke).
+  const k = Math.min(3, stroke.length - 1);
+  const a = atStart ? stroke[0] : stroke[stroke.length - 1];
+  const b = atStart ? stroke[k] : stroke[stroke.length - 1 - k];
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const m = Math.hypot(dx, dy) || 1;
+  return { dx: dx / m, dy: dy / m };
+}
+
+function mergeAlignedAtJunctions(strokes) {
+  // Group strokes by each endpoint location; if two ends meet at the same
+  // pixel and their incoming tangents are roughly opposite (the strokes form
+  // a smooth continuation), splice them together.
+  const ALIGN_DOT = -0.5; // -1 = perfectly opposite, > -0.5 = too sharp a kink
+  const out = strokes.map(s => s.slice());
+
+  let didMerge = true;
+  while (didMerge) {
+    didMerge = false;
+    outer:
+    for (let i = 0; i < out.length; i++) {
+      const si = out[i];
+      if (!si) continue;
+      for (let j = i + 1; j < out.length; j++) {
+        const sj = out[j];
+        if (!sj) continue;
+
+        // Test the four endpoint pairings: (i.start|end) × (j.start|end)
+        const ends = [
+          { ai: 0, aj: 0, joinAt: 'startStart' },
+          { ai: 0, aj: sj.length - 1, joinAt: 'startEnd' },
+          { ai: si.length - 1, aj: 0, joinAt: 'endStart' },
+          { ai: si.length - 1, aj: sj.length - 1, joinAt: 'endEnd' },
+        ];
+        for (const e of ends) {
+          const pi = si[e.ai], pj = sj[e.aj];
+          if (Math.abs(pi.x - pj.x) > 1.5 || Math.abs(pi.y - pj.y) > 1.5) continue;
+          const di = endpointDir(si, e.ai === 0);
+          const dj = endpointDir(sj, e.aj === 0);
+          // Tangents both point INTO their stroke; for a smooth join, they
+          // should be opposite (dot ~ -1).
+          const dot = di.dx * dj.dx + di.dy * dj.dy;
+          if (dot > ALIGN_DOT) continue;
+
+          // Build merged stroke with si then sj, reversing where needed
+          let a = si, b = sj;
+          if (e.joinAt === 'startStart') a = si.slice().reverse();
+          else if (e.joinAt === 'startEnd') { a = si.slice().reverse(); b = sj.slice().reverse(); }
+          else if (e.joinAt === 'endEnd') b = sj.slice().reverse();
+          // endStart: keep both as-is
+          out[i] = a.concat(b.slice(1));
+          out[j] = null;
+          didMerge = true;
+          continue outer;
+        }
+      }
+    }
+  }
+  return out.filter(Boolean);
 }
 
 // --- Step 4: Humanize strokes ---
@@ -428,9 +500,10 @@ function humanizeStrokes(strokes, char) {
       x = rx * scaleX + cx + translateX;
       y = ry * scaleY + cy + translateY;
 
-      // Per-point jitter (fades at endpoints)
+      // Per-point jitter (fades at endpoints) — kept very small so strokes
+      // read as smooth, not noisy
       const edgeFade = Math.sin(t * Math.PI);
-      const jitterAmount = 0.006 * edgeFade;
+      const jitterAmount = 0.0025 * edgeFade;
       x += (rand() * 2 - 1) * jitterAmount;
       y += (rand() * 2 - 1) * jitterAmount;
 
