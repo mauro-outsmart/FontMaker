@@ -22,25 +22,31 @@
         <input type="text" class="font-name-input" id="fontName" value="My Font" spellcheck="false" autocomplete="off">
         <div class="top-bar__spacer"></div>
         <button class="btn btn--ghost" id="importBtn">Import</button>
+        <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
         <button class="btn btn--primary" id="exportBtn">Export .otf</button>
         <button class="btn btn--primary" id="exportJsBtn">Export .js</button>
         <input type="file" id="importFile" accept=".json,.ttf,.otf,.woff,.woff2" hidden>
       </div>
-      <div class="top-bar__row top-bar__row--section">
-        <span class="top-bar__section-label">YOUR FONT</span>
+      <div class="top-bar__row top-bar__tabs">
+        <button class="tab tab--active" id="tabMine" data-tab="mine">DRAW YOUR FONT</button>
+        <button class="tab" id="tabOther" data-tab="other">OTHER FONTS</button>
+      </div>
+      <div class="top-bar__row top-bar__row--section" id="rowMine">
         <label class="control">
           <span class="control__label">Reference</span>
           <select id="refFontMine" class="control__select"><option value="">None</option></select>
         </label>
+        <button class="btn btn--ghost" id="importFontMineBtn">Import font</button>
+        <span class="top-bar__hint">draw 2 glyphs and then tap generate</span>
         <div class="top-bar__spacer"></div>
         <button class="btn btn--ghost" id="generateMineBtn" disabled>Generate</button>
       </div>
-      <div class="top-bar__row top-bar__row--section">
-        <span class="top-bar__section-label">OTHER FONTS</span>
+      <div class="top-bar__row top-bar__row--section" id="rowOther" hidden>
         <label class="control">
-          <span class="control__label">Reference</span>
+          <span class="control__label">Choose a font</span>
           <select id="refFont" class="control__select"><option value="">None</option></select>
         </label>
+        <button class="btn btn--ghost" id="importFontOtherBtn">Import font</button>
         <label class="control" id="controlBrush">
           <span class="control__label">Style</span>
           <select id="brushType" class="control__select">
@@ -85,8 +91,6 @@
         </label>
         <button class="btn btn--primary anim-control" id="exportGifBtn" disabled>Export GIF</button>
         <button class="btn btn--primary anim-control" id="exportHtmlBtn" disabled>Export HTML</button>
-        <div class="top-bar__spacer"></div>
-        <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
       </div>
     </header>
 

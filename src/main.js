@@ -390,6 +390,30 @@ async function init() {
   refFontSelect.addEventListener('change', updateGenerateMineAvailability);
   refFontMineSelect.addEventListener('change', updateGenerateMineAvailability);
 
+  // Tabs — switch between the YOUR FONT and OTHER FONTS rows
+  const tabMine = document.getElementById('tabMine');
+  const tabOther = document.getElementById('tabOther');
+  const rowMine = document.getElementById('rowMine');
+  const rowOther = document.getElementById('rowOther');
+  function setTab(which) {
+    const isMine = which === 'mine';
+    tabMine.classList.toggle('tab--active', isMine);
+    tabOther.classList.toggle('tab--active', !isMine);
+    rowMine.hidden = !isMine;
+    rowOther.hidden = isMine;
+  }
+  tabMine.addEventListener('click', () => setTab('mine'));
+  tabOther.addEventListener('click', () => setTab('other'));
+
+  // The two "Import font" buttons in the rows reuse the same hidden file input
+  // as the top Import button. Handler differentiates by extension.
+  document.getElementById('importFontMineBtn').addEventListener('click', () => {
+    importFileInput.click();
+  });
+  document.getElementById('importFontOtherBtn').addEventListener('click', () => {
+    importFileInput.click();
+  });
+
   // Export button
   const exportBtn = document.getElementById('exportBtn');
   exportBtn.addEventListener('click', () => {
