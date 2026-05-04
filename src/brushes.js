@@ -1,9 +1,14 @@
-// Brush types: 'normal' (Handdrawn round), 'growing' (Handdrawn paint), 'original'
+// Brush types: 'normal' (Handdrawn round), 'growing' (Handdrawn paint),
+// 'original', 'original-italic' (Original sheared at gen time)
+
+export function isOriginalStyle(brushType) {
+  return brushType === 'original' || brushType === 'original-italic';
+}
 
 export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   if (points.length < 2) return;
   h = h || w;
-  if (brushType === 'original') return; // handled via drawGlyph
+  if (isOriginalStyle(brushType)) return; // handled via drawGlyph
   switch (brushType) {
     case 'growing':
       drawGrowing(ctx, points, lineWidth, ox, oy, w, h);
@@ -14,12 +19,12 @@ export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   }
 }
 
-// Render a glyph's strokes. For 'original' style, fills all contours as one
-// path with even-odd rule so holes (e.g. inside B, O) cut through. For other
-// styles, loops drawStroke per stroke.
+// Render a glyph's strokes. For 'original'/'original-italic', fills all
+// contours as one path with even-odd rule so holes (e.g. inside B, O) cut
+// through. For other styles, loops drawStroke per stroke.
 export function drawGlyph(ctx, strokes, lineWidth, brushType, ox, oy, w, h) {
   h = h || w;
-  if (brushType === 'original') {
+  if (isOriginalStyle(brushType)) {
     drawOriginalGlyph(ctx, strokes, ox, oy, w, h);
     return;
   }

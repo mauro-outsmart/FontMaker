@@ -279,7 +279,7 @@ async function init() {
 
   function updateStyleDependentControls() {
     const v = brushTypeSelect.value;
-    const isOriginal = v === 'original';
+    const isOriginal = v === 'original' || v === 'original-italic';
     const noStyle = v === '';
     strokeWidthInput.disabled = isOriginal || noStyle;
     document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal || noStyle);

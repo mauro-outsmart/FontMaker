@@ -20,9 +20,14 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
         return { completed: false, count };
       }
       const char = chars[i];
-      const strokes = brushType === 'original'
-        ? generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE)
-        : generateGlyph(char, referenceFont, CANVAS_SIZE);
+      let strokes;
+      if (brushType === 'original') {
+        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 0);
+      } else if (brushType === 'original-italic') {
+        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 10);
+      } else {
+        strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
+      }
       if (strokes.length > 0) {
         batchSaveGlyph(char, strokes);
         count++;
@@ -46,7 +51,7 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
   return { completed: true, count };
 }
 
-function generateOriginalGlyph(char, referenceFont, size) {
+function generateOriginalGlyph(char, referenceFont, size, italicDeg) {
   const grid = renderCharToBitmap(char, referenceFont, size);
 
   let hasPixels = false;
@@ -63,12 +68,17 @@ function generateOriginalGlyph(char, referenceFont, size) {
     .filter(c => c.length >= 3);
   const wound = fixWinding(smoothed);
 
-  // Normalize to 0-1 and add minimal timing so animation still works
+  // Italic shear pivoted at the vertical center keeps the glyph roughly
+  // in place — top moves right, bottom moves left.
+  const shear = italicDeg ? Math.tan(italicDeg * Math.PI / 180) : 0;
+
   let globalT = 0;
   return wound.map((contour) => {
     const stroke = contour.map((p, i) => {
       if (i > 0) globalT += 1;
-      return { x: p.x / size, y: p.y / size, t: Math.round(globalT) };
+      const ny = p.y / size;
+      const nx = p.x / size + shear * (0.5 - ny);
+      return { x: nx, y: ny, t: Math.round(globalT) };
     });
     globalT += 40;
     return stroke;

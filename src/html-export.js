@@ -159,7 +159,7 @@ function renderFrame(getStrokes){
     const lw=D.strokeWidth*(S/200);
     const strokes=getStrokes(ch,ci,g);
     if(strokes&&strokes.length>0){
-      if(D.brushType==='original'){drawOriginal(strokes,x+lo,BL,S,S)}
+      if(D.brushType==='original'||D.brushType==='original-italic'){drawOriginal(strokes,x+lo,BL,S,S)}
       else{for(const s of strokes){if(s.length>=2)drawStroke(s,lw,D.brushType,x+lo,BL,S,S)}}
     }
     x+=adv;ci++;

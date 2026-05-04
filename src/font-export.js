@@ -36,7 +36,8 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
     const kern = hasPerGlyph ? (kl + kr) : kerning;
     const glyphAdvance = baseAdvance + kern;
 
-    const contours = brushType === 'original'
+    const isOriginal = brushType === 'original' || brushType === 'original-italic';
+    const contours = isOriginal
       ? glyph.strokes.map(s => s.map(p => ({ x: p.x * TRACE_SIZE, y: p.y * TRACE_SIZE })))
       : glyphToContours(glyph.strokes, strokeWidth, brushType);
     const path = new opentype.Path();

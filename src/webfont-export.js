@@ -204,7 +204,7 @@ const adv=S*(650+k)/1000,lo=S*kl/1000;
 const lw=F.strokeWidth*(S/200);
 const strokes=getStrokes(ch,ci,g);
 if(strokes&&strokes.length>0){
-if(F.brushType==='original'){dor(ctx,strokes,x+lo,this._BL,S,S,col)}
+if(F.brushType==='original'||F.brushType==='original-italic'){dor(ctx,strokes,x+lo,this._BL,S,S,col)}
 else{for(const s of strokes){if(s.length>=2)ds(ctx,s,lw,F.brushType,x+lo,this._BL,S,S,col)}}}
 x+=adv;ci++;}
 ctx.restore();
