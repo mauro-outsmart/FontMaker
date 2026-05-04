@@ -1,8 +1,9 @@
-// Brush types: 'normal', 'growing', 'simple'
+// Brush types: 'normal', 'growing', 'simple', 'original'
 
 export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
   if (points.length < 2) return;
   h = h || w;
+  if (brushType === 'original') return; // handled via drawGlyph
   switch (brushType) {
     case 'growing':
       drawGrowing(ctx, points, lineWidth, ox, oy, w, h);
@@ -14,6 +15,36 @@ export function drawStroke(ctx, points, lineWidth, brushType, ox, oy, w, h) {
       drawNormal(ctx, points, lineWidth, ox, oy, w, h);
       break;
   }
+}
+
+// Render a glyph's strokes. For 'original' style, fills all contours as one
+// path with even-odd rule so holes (e.g. inside B, O) cut through. For other
+// styles, loops drawStroke per stroke.
+export function drawGlyph(ctx, strokes, lineWidth, brushType, ox, oy, w, h) {
+  h = h || w;
+  if (brushType === 'original') {
+    drawOriginalGlyph(ctx, strokes, ox, oy, w, h);
+    return;
+  }
+  for (const stroke of strokes) {
+    if (stroke.length >= 2) drawStroke(ctx, stroke, lineWidth, brushType, ox, oy, w, h);
+  }
+}
+
+function drawOriginalGlyph(ctx, strokes, ox, oy, w, h) {
+  ctx.save();
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.beginPath();
+  for (const stroke of strokes) {
+    if (!stroke || stroke.length < 3) continue;
+    ctx.moveTo(ox + stroke[0].x * w, oy + stroke[0].y * h);
+    for (let i = 1; i < stroke.length; i++) {
+      ctx.lineTo(ox + stroke[i].x * w, oy + stroke[i].y * h);
+    }
+    ctx.closePath();
+  }
+  ctx.fill('evenodd');
+  ctx.restore();
 }
 
 // --- Normal brush: single quadratic curve path ---

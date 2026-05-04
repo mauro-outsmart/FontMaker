@@ -26,7 +26,7 @@ export function glyphToContours(strokes, strokeWidth, brushType = 'normal') {
   return fixWinding(smoothed);
 }
 
-function fixWinding(contours) {
+export function fixWinding(contours) {
   // Determine nesting: count how many other contours contain each one
   const nesting = contours.map(() => 0);
 
@@ -130,7 +130,7 @@ function getCase(grid, x, y, w, h) {
   return (g(x, y) << 3) | (g(x + 1, y) << 2) | (g(x + 1, y + 1) << 1) | g(x, y + 1);
 }
 
-function extractContours(grid, w, h) {
+export function extractContours(grid, w, h) {
   const contours = [];
   const visited = new Set();
 
@@ -181,7 +181,7 @@ function trace(grid, w, h, sx, sy, sEntry, visited) {
   return pts;
 }
 
-function chaikin(pts) {
+export function chaikin(pts) {
   if (pts.length < 3) return pts;
   const n = pts.length;
 
@@ -217,7 +217,7 @@ function chaikin(pts) {
   return result;
 }
 
-function simplify(pts, tol) {
+export function simplify(pts, tol) {
   if (pts.length <= 2) return pts;
 
   let maxD = 0, maxI = 0;

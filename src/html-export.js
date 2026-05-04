@@ -101,6 +101,16 @@ function drawStroke(pts,lw,bt,ox,oy,w,h){
   const l=pts[pts.length-1];ctx.lineTo(ox+l[0]*w,oy+l[1]*h);
   ctx.stroke();ctx.restore();
 }
+function drawOriginal(strokes,ox,oy,w,h){
+  ctx.save();ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();
+  for(const s of strokes){
+    if(!s||s.length<3)continue;
+    ctx.moveTo(ox+s[0][0]*w,oy+s[0][1]*h);
+    for(let i=1;i<s.length;i++)ctx.lineTo(ox+s[i][0]*w,oy+s[i][1]*h);
+    ctx.closePath();
+  }
+  ctx.fill('evenodd');ctx.restore();
+}
 function drawGrowing(pts,lw,ox,oy,w,h){
   const mn=lw*0.25;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
   let cd=0;
@@ -149,7 +159,8 @@ function renderFrame(getStrokes){
     const lw=D.strokeWidth*(S/200);
     const strokes=getStrokes(ch,ci,g);
     if(strokes&&strokes.length>0){
-      for(const s of strokes){if(s.length>=2)drawStroke(s,lw,D.brushType,x+lo,BL,S,S)}
+      if(D.brushType==='original'){drawOriginal(strokes,x+lo,BL,S,S)}
+      else{for(const s of strokes){if(s.length>=2)drawStroke(s,lw,D.brushType,x+lo,BL,S,S)}}
     }
     x+=adv;ci++;
   }

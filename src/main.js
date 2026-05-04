@@ -285,7 +285,8 @@ async function init() {
         // Update preview every 10 glyphs
         if ((index + 1) % 10 === 0) preview.render();
       },
-      generateController.signal
+      generateController.signal,
+      brushTypeSelect.value
     );
 
     generateController = null;

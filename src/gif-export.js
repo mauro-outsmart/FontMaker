@@ -1,6 +1,6 @@
 import GIF from 'gif.js';
 import { getGlyph } from './glyphs.js';
-import { drawStroke } from './brushes.js';
+import { drawGlyph } from './brushes.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
 
 const BOIL_FPS = 8;
@@ -97,10 +97,7 @@ function renderFrame(ctx, text, settings, canvasWidth, padding, getStrokes) {
     if (strokes && strokes.length > 0) {
       ctx.save();
       ctx.strokeStyle = '#fff';
-      for (const stroke of strokes) {
-        if (stroke.length < 2) continue;
-        drawStroke(ctx, stroke, lw, brushType, x + leftOffset, BASELINE, GLYPH_SIZE, GLYPH_SIZE);
-      }
+      drawGlyph(ctx, strokes, lw, brushType, x + leftOffset, BASELINE, GLYPH_SIZE, GLYPH_SIZE);
       ctx.restore();
     }
 

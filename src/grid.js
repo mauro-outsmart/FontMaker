@@ -1,4 +1,4 @@
-import { drawStroke } from './brushes.js';
+import { drawGlyph } from './brushes.js';
 
 export function renderGrid(container, glyphs, settings, onGlyphClick) {
   // Preserve progress badge if it exists
@@ -75,10 +75,7 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
     const brushType = settings.brushType || 'normal';
     ctx.save();
     ctx.strokeStyle = '#fff';
-    for (const stroke of strokesToDraw) {
-      if (!stroke || stroke.length < 2) continue;
-      drawStroke(ctx, stroke, lw, brushType, 0, 0, w, h);
-    }
+    drawGlyph(ctx, strokesToDraw, lw, brushType, 0, 0, w, h);
     ctx.restore();
   }
 }

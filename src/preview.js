@@ -1,5 +1,5 @@
 import { getGlyph } from './glyphs.js';
-import { drawStroke } from './brushes.js';
+import { drawGlyph } from './brushes.js';
 import { getBoilFrames, BOIL_FRAMES } from './boil.js';
 
 const DEFAULT_GLYPH_DURATION = 500; // ms for glyphs without timing data
@@ -176,10 +176,7 @@ export class Preview {
     const lw = this.strokeWidth * (size / 200);
     ctx.save();
     ctx.strokeStyle = '#fff';
-    for (const stroke of strokes) {
-      if (stroke.length < 2) continue;
-      drawStroke(ctx, stroke, lw, this.brushType, offsetX, offsetY, size, size);
-    }
+    drawGlyph(ctx, strokes, lw, this.brushType, offsetX, offsetY, size, size);
     ctx.restore();
   }
 

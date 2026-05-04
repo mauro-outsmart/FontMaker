@@ -1,4 +1,4 @@
-import { drawStroke } from './brushes.js';
+import { drawStroke, drawGlyph } from './brushes.js';
 
 export class DrawingEngine {
   constructor(canvas, options = {}) {
@@ -90,13 +90,25 @@ export class DrawingEngine {
 
     this._drawReference();
 
-    // Draw completed strokes
-    for (const stroke of this.strokes) {
-      this._drawStroke(stroke);
-    }
-    // Draw current stroke in progress
-    if (this.currentStroke && this.currentStroke.length >= 2) {
-      this._drawStroke(this.currentStroke);
+    if (this.brushType === 'original') {
+      // Filled-glyph rendering needs all contours in one path
+      const all = this.currentStroke && this.currentStroke.length >= 2
+        ? [...this.strokes, this.currentStroke]
+        : this.strokes;
+      const { squareSize, extraPx } = this.getLayout();
+      ctx.save();
+      ctx.strokeStyle = this.strokeColor;
+      drawGlyph(ctx, all, this.strokeWidth * (squareSize / 200), 'original', extraPx, 0, squareSize, squareSize);
+      ctx.restore();
+    } else {
+      // Draw completed strokes
+      for (const stroke of this.strokes) {
+        this._drawStroke(stroke);
+      }
+      // Draw current stroke in progress
+      if (this.currentStroke && this.currentStroke.length >= 2) {
+        this._drawStroke(this.currentStroke);
+      }
     }
 
     if (this.onAfterRender) this.onAfterRender();

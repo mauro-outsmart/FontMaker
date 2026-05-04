@@ -1,11 +1,13 @@
 import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch } from './glyphs.js';
+import { extractContours, chaikin, simplify, fixWinding } from './contour.js';
 
 const CANVAS_SIZE = 100;
+const ORIGINAL_SIZE = 300;
 const FLUSH_INTERVAL = 20;
 
 // --- Public API ---
 
-export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal) {
+export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal') {
   // Limit to Basic Latin — extended Unicode sets are too slow and overflow storage
   chars = chars.filter(c => { const code = c.codePointAt(0); return code >= 0x21 && code <= 0x7E; });
   const total = chars.length;
@@ -18,7 +20,9 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
         return { completed: false, count };
       }
       const char = chars[i];
-      const strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
+      const strokes = brushType === 'original'
+        ? generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE)
+        : generateGlyph(char, referenceFont, CANVAS_SIZE);
       if (strokes.length > 0) {
         batchSaveGlyph(char, strokes);
         count++;
@@ -40,6 +44,35 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
     try { endBatch(); } catch { /* quota exceeded on final flush */ }
   }
   return { completed: true, count };
+}
+
+function generateOriginalGlyph(char, referenceFont, size) {
+  const grid = renderCharToBitmap(char, referenceFont, size);
+
+  let hasPixels = false;
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i]) { hasPixels = true; break; }
+  }
+  if (!hasPixels) return [];
+
+  const raw = extractContours(grid, size, size);
+  const smoothed = raw
+    .map(c => simplify(c, 0.6))
+    .filter(c => c.length >= 3)
+    .map(c => simplify(chaikin(chaikin(c)), 0.3))
+    .filter(c => c.length >= 3);
+  const wound = fixWinding(smoothed);
+
+  // Normalize to 0-1 and add minimal timing so animation still works
+  let globalT = 0;
+  return wound.map((contour) => {
+    const stroke = contour.map((p, i) => {
+      if (i > 0) globalT += 1;
+      return { x: p.x / size, y: p.y / size, t: Math.round(globalT) };
+    });
+    globalT += 40;
+    return stroke;
+  });
 }
 
 function generateGlyph(char, referenceFont, size) {

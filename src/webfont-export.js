@@ -58,6 +58,15 @@ ctx.quadraticCurveTo(ox+pts[i][0]*w,oy+pts[i][1]*h,xc,yc);}
 const l=pts[pts.length-1];ctx.lineTo(ox+l[0]*w,oy+l[1]*h);
 ctx.stroke();ctx.restore();}
 
+function dor(ctx,strokes,ox,oy,w,h,col){
+ctx.save();ctx.fillStyle=col;ctx.beginPath();
+for(const s of strokes){
+if(!s||s.length<3)continue;
+ctx.moveTo(ox+s[0][0]*w,oy+s[0][1]*h);
+for(let i=1;i<s.length;i++)ctx.lineTo(ox+s[i][0]*w,oy+s[i][1]*h);
+ctx.closePath();}
+ctx.fill('evenodd');ctx.restore();}
+
 function dg(ctx,pts,lw,ox,oy,w,h){
 const mn=lw*0.25;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 let cd=0;
@@ -195,7 +204,8 @@ const adv=S*(650+k)/1000,lo=S*kl/1000;
 const lw=F.strokeWidth*(S/200);
 const strokes=getStrokes(ch,ci,g);
 if(strokes&&strokes.length>0){
-for(const s of strokes){if(s.length>=2)ds(ctx,s,lw,F.brushType,x+lo,this._BL,S,S,col)}}
+if(F.brushType==='original'){dor(ctx,strokes,x+lo,this._BL,S,S,col)}
+else{for(const s of strokes){if(s.length>=2)ds(ctx,s,lw,F.brushType,x+lo,this._BL,S,S,col)}}}
 x+=adv;ci++;}
 ctx.restore();
 }
