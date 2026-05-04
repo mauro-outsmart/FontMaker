@@ -79,7 +79,7 @@ export class Editor {
     }
   }
 
-  open(char, referenceFont, strokeWidth) {
+  open(char, referenceFont, strokeWidth, brushType) {
     this.currentChar = char;
     this.currentIndex = this._glyphChars.indexOf(char);
     this.referenceFont = referenceFont;
@@ -98,6 +98,9 @@ export class Editor {
     requestAnimationFrame(() => {
       this._sizeCanvas();
       this.engine.setStrokeWidth(strokeWidth);
+      // Always sync brush type at open time so the engine matches the current
+      // dropdown selection regardless of init order.
+      if (brushType !== undefined) this.engine.setBrushType(brushType);
       this.engine.setReference(char, referenceFont);
 
       const glyph = getGlyph(char);
@@ -170,14 +173,14 @@ export class Editor {
     if (this.currentIndex <= 0) return;
     this._autoSave();
     const newChar = this._glyphChars[this.currentIndex - 1];
-    this.open(newChar, this.referenceFont, this.strokeWidth);
+    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType);
   }
 
   next() {
     if (this.currentIndex >= this._glyphChars.length - 1) return;
     this._autoSave();
     const newChar = this._glyphChars[this.currentIndex + 1];
-    this.open(newChar, this.referenceFont, this.strokeWidth);
+    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType);
   }
 
   setGlyphChars(chars) {

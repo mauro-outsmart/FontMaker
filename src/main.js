@@ -112,7 +112,7 @@ async function init() {
   const glyphGrid = document.getElementById('glyphGrid');
 
   function openGlyph(char) {
-    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value));
+    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value), brushTypeSelect.value);
   }
 
   function rebuildGrid() {
