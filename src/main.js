@@ -128,12 +128,29 @@ async function init() {
     rebuildGrid();
   }
 
+  let prevRefFont = refFontSelect.value;
   refFontSelect.addEventListener('change', async () => {
+    if (getDrawnCount(activeChars) > 0) {
+      if (!confirm('Switching reference font will clear your drawn glyphs. Continue?')) {
+        refFontSelect.value = prevRefFont;
+        return;
+      }
+      clearAllGlyphs();
+    }
+    prevRefFont = refFontSelect.value;
     saveSettings({ referenceFont: refFontSelect.value });
     editor.updateReferenceFont(refFontSelect.value);
     preview.setReferenceFont(refFontSelect.value);
     await updateCharSet(refFontSelect.value);
+    preview.render();
   });
+
+  function updateStrokeAvailability() {
+    const isOriginal = brushTypeSelect.value === 'original';
+    strokeWidthInput.disabled = isOriginal;
+    document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal);
+  }
+  updateStrokeAvailability();
 
   strokeWidthInput.addEventListener('input', () => {
     strokeWidthValue.textContent = strokeWidthInput.value + 'px';
@@ -148,6 +165,7 @@ async function init() {
     editor.updateBrushType(brushTypeSelect.value);
     preview.setBrushType(brushTypeSelect.value);
     refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
+    updateStrokeAvailability();
   });
 
   kerningInput.addEventListener('input', () => {

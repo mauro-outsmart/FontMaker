@@ -145,6 +145,11 @@ body {
   min-width: 32px;
 }
 
+.control--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 /* Buttons */
 .btn {
   font-family: var(--font);
