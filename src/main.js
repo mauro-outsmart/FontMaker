@@ -79,6 +79,8 @@ async function init() {
   preview.setKerning(settings.kerning);
   preview.setStrokeWidth(settings.strokeWidth);
   preview.setBrushType(settings.brushType);
+  editor.updateBrushType(settings.brushType);
+  editor.updateStrokeWidth(settings.strokeWidth);
 
   // Mobile preview toggle
   const previewSection = document.getElementById('previewSection');
