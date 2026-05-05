@@ -1,5 +1,5 @@
 import { getSystemFonts, detectFontChars } from './fonts.js';
-import { getGlyphSet, getGlyph, getSettings, saveSettings, getDrawnCount, GLYPHS, importProject, clearAllGlyphs, resetAllKerning, autoKernAll } from './glyphs.js';
+import { getGlyphSet, getGlyph, getSettings, saveSettings, getDrawnCount, getUserDrawnCount, GLYPHS, importProject, clearAllGlyphs, resetAllKerning, autoKernAll } from './glyphs.js';
 import { renderGrid, updateCard, refreshAllThumbnails, refreshAllThumbnailsBoilFrame } from './grid.js';
 import { Editor } from './editor.js';
 import { Preview } from './preview.js';
@@ -366,17 +366,18 @@ async function init() {
     confirmText: 'Generate all glyphs from reference font? This will overwrite existing glyphs.',
   }));
 
-  // YOUR FONT generate: fills in missing glyphs only, using the user's
-  // hand-drawn aesthetic (Handdrawn round). Existing user-drawn glyphs are
-  // preserved.
+  // YOUR FONT generate: fills in missing glyphs only, matching the user's
+  // current drawing style (brush + stroke width). Existing user-drawn glyphs
+  // are preserved.
   const generateMineBtn = document.getElementById('generateMineBtn');
   generateMineBtn.addEventListener('click', async () => {
     if (!refFontSelect.value) {
       alert('Pick a reference font first.');
       return;
     }
-    // Force a handdrawn style for both generation and rendering so generated
-    // glyphs match user-drawn ones visually.
+    // The Draw-your-font flow only makes sense for handdrawn brushes — the
+    // user can't draw a filled-contour glyph by hand. Default to 'normal' if
+    // they're on an Original style or empty.
     if (brushTypeSelect.value !== 'normal' && brushTypeSelect.value !== 'growing') {
       brushTypeSelect.value = 'normal';
       brushTypeSelect.dispatchEvent(new Event('change'));
@@ -385,17 +386,29 @@ async function init() {
       btn: generateMineBtn,
       brushType: brushTypeSelect.value,
       skipExisting: true,
-      confirmText: 'Fill in missing glyphs from the reference font? Glyphs you have drawn will be preserved.',
+      confirmText: 'Fill in missing glyphs in the same style as your drawings? Your drawn glyphs will be preserved.',
     });
   });
 
-  // Enable YOUR FONT generate whenever a reference is selected
+  // Enable YOUR FONT generate when reference is set AND user has drawn ≥2
+  // glyphs by hand. We track userDrawn per glyph (set by the editor on save).
+  const MIN_USER_GLYPHS = 2;
+  const hint = document.querySelector('.top-bar__hint');
   function updateGenerateMineAvailability() {
-    generateMineBtn.disabled = !refFontSelect.value;
+    const userCount = getUserDrawnCount();
+    const enough = userCount >= MIN_USER_GLYPHS;
+    generateMineBtn.disabled = !refFontSelect.value || !enough;
+    if (hint) {
+      const remaining = Math.max(0, MIN_USER_GLYPHS - userCount);
+      hint.textContent = remaining > 0
+        ? `draw ${remaining} more glyph${remaining === 1 ? '' : 's'} to enable generate`
+        : 'ready — tap generate to fill in the rest';
+    }
   }
   updateGenerateMineAvailability();
   refFontSelect.addEventListener('change', updateGenerateMineAvailability);
   refFontMineSelect.addEventListener('change', updateGenerateMineAvailability);
+  window.addEventListener('glyph-updated', updateGenerateMineAvailability);
 
   // Tabs — switch between the YOUR FONT and OTHER FONTS rows
   const tabMine = document.getElementById('tabMine');

@@ -139,7 +139,7 @@ export class Editor {
 
   save() {
     const strokes = this.engine.getStrokes();
-    saveGlyph(this.currentChar, strokes);
+    saveGlyph(this.currentChar, strokes, true);
     if (this.kerningEdited) {
       saveGlyphKerning(this.currentChar, this.kerningLeft, this.kerningRight);
     }
@@ -194,7 +194,7 @@ export class Editor {
         saveGlyphKerning(this.currentChar, this.kerningLeft, this.kerningRight);
       }
       if (strokes.length > 0) {
-        saveGlyph(this.currentChar, strokes);
+        saveGlyph(this.currentChar, strokes, true);
       }
       window.dispatchEvent(new CustomEvent('glyph-updated', { detail: this.currentChar }));
     }

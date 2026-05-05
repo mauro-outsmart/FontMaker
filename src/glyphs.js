@@ -48,13 +48,18 @@ function getGlyph(char) {
   return makeDefaultGlyph(char);
 }
 
-function saveGlyph(char, strokes) {
+function saveGlyph(char, strokes, userDrawn = false) {
   const store = loadGlyphStore();
+  // Once a glyph has been marked as user-drawn, keep that mark on subsequent
+  // saves (e.g. re-saving in the editor) but never let auto-generation flip it
+  // back to false.
+  const prevUserDrawn = store[char]?.userDrawn === true;
   store[char] = {
     strokes,
     width: store[char]?.width || DEFAULT_WIDTH,
     kerningLeft: store[char]?.kerningLeft ?? null,
     kerningRight: store[char]?.kerningRight ?? null,
+    userDrawn: userDrawn || prevUserDrawn,
   };
   saveGlyphStore(store);
 }
@@ -127,6 +132,15 @@ function getDrawnCount(chars = null) {
   return Object.values(store).filter((g) => g.strokes && g.strokes.length > 0).length;
 }
 
+// Number of glyphs the user has drawn by hand in the editor (excludes
+// auto-generated ones). Used to gate the YOUR FONT Generate button.
+function getUserDrawnCount() {
+  const store = loadGlyphStore();
+  return Object.values(store).filter(
+    (g) => g.userDrawn === true && g.strokes && g.strokes.length > 0
+  ).length;
+}
+
 function getSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -186,6 +200,8 @@ function batchSaveGlyph(char, strokes) {
     width: _batchStore[char]?.width || DEFAULT_WIDTH,
     kerningLeft: _batchStore[char]?.kerningLeft ?? null,
     kerningRight: _batchStore[char]?.kerningRight ?? null,
+    // Auto-generated; preserve any existing user-drawn flag
+    userDrawn: _batchStore[char]?.userDrawn === true,
   };
 }
 
@@ -215,6 +231,7 @@ export {
   isGlyphDrawn,
   getAllGlyphs,
   getDrawnCount,
+  getUserDrawnCount,
   getSettings,
   saveSettings,
   exportProject,

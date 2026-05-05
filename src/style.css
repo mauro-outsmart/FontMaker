@@ -61,7 +61,7 @@ body {
 }
 
 .top-bar__row:first-child {
-  border-bottom: 1px solid var(--border);
+  /* no separator under the title row */
 }
 
 .top-bar__row--controls {
@@ -174,20 +174,19 @@ body {
 }
 
 .tab {
-  background: var(--bg);
+  background: transparent;
   border: 1px solid var(--border);
-  border-bottom: none;
   border-radius: 8px 8px 0 0;
   font-family: var(--font);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
   padding: 9px 18px 8px;
   cursor: pointer;
-  text-transform: uppercase;
   transition: color 150ms, border-color 150ms, background 150ms;
-  /* Pull the bottom edge over the baseline so active tabs look attached */
+  /* Pull the bottom edge over the row's baseline so the active tab visually
+     "merges" into the content below (no bottom border), while inactive tabs
+     keep theirs and look detached from the content. */
   margin-bottom: -1px;
 }
 
@@ -198,7 +197,8 @@ body {
 .tab--active {
   color: var(--text);
   border-color: var(--text);
-  background: var(--surface);
+  border-bottom-color: transparent;
+  background: var(--bg);
 }
 
 .top-bar__hint {

@@ -21,15 +21,15 @@
         <img src="/symbol.png" alt="FontMaker" class="top-bar__logo">
         <input type="text" class="font-name-input" id="fontName" value="My Font" spellcheck="false" autocomplete="off">
         <div class="top-bar__spacer"></div>
-        <button class="btn btn--ghost" id="importBtn">Import</button>
         <button class="btn btn--primary" id="exportBtn">Export .otf</button>
         <button class="btn btn--primary" id="exportJsBtn">Export .js</button>
         <button class="btn btn--ghost" id="clearAllBtn">Clear All</button>
+        <button id="importBtn" hidden></button>
         <input type="file" id="importFile" accept=".json,.ttf,.otf,.woff,.woff2" hidden>
       </div>
       <div class="top-bar__row top-bar__tabs">
-        <button class="tab tab--active" id="tabMine" data-tab="mine">DRAW YOUR FONT</button>
-        <button class="tab" id="tabOther" data-tab="other">OTHER FONTS</button>
+        <button class="tab tab--active" id="tabMine" data-tab="mine">Draw your font...</button>
+        <button class="tab" id="tabOther" data-tab="other">Other fonts</button>
       </div>
       <div class="top-bar__row top-bar__row--section" id="rowMine">
         <label class="control">
