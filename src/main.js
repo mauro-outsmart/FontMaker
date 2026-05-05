@@ -118,7 +118,7 @@ async function init() {
   const glyphGrid = document.getElementById('glyphGrid');
 
   function openGlyph(char) {
-    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value), brushTypeSelect.value, activeTab === 'mine');
+    editor.open(char, effectiveRefFont(), parseInt(strokeWidthInput.value), brushTypeSelect.value, activeTab === 'mine');
   }
 
   function rebuildGrid() {
@@ -371,13 +371,9 @@ async function init() {
   // are preserved.
   const generateMineBtn = document.getElementById('generateMineBtn');
   generateMineBtn.addEventListener('click', async () => {
-    if (!refFontSelect.value) {
-      alert('Pick a reference font first.');
-      return;
-    }
-    // The Draw-your-font flow only makes sense for handdrawn brushes — the
-    // user can't draw a filled-contour glyph by hand. Default to 'normal' if
-    // they're on an Original style or empty.
+    // Draw-your-font always traces a clean sans-serif silhouette, so we don't
+    // need a reference font from the user. Default the brush to 'normal' if
+    // they're on an Original style (which can't be hand-drawn).
     if (brushTypeSelect.value !== 'normal' && brushTypeSelect.value !== 'growing') {
       brushTypeSelect.value = 'normal';
       brushTypeSelect.dispatchEvent(new Event('change'));
@@ -390,14 +386,14 @@ async function init() {
     });
   });
 
-  // Enable YOUR FONT generate when reference is set AND user has drawn ≥2
-  // glyphs by hand. We track userDrawn per glyph (set by the editor on save).
+  // Enable YOUR FONT generate as soon as the user has drawn ≥2 glyphs by hand
+  // (tracked via the userDrawn flag set by the editor on save).
   const MIN_USER_GLYPHS = 2;
   const hint = document.querySelector('.top-bar__hint');
   function updateGenerateMineAvailability() {
     const userCount = getUserDrawnCount();
     const enough = userCount >= MIN_USER_GLYPHS;
-    generateMineBtn.disabled = !refFontSelect.value || !enough;
+    generateMineBtn.disabled = !enough;
     if (hint) {
       hint.textContent = enough
         ? 'Ready — tap generate to fill in the rest'
@@ -417,6 +413,20 @@ async function init() {
   const rowMine = document.getElementById('rowMine');
   const rowOther = document.getElementById('rowOther');
   let activeTab = 'mine';
+  const controlStroke = document.getElementById('controlStroke');
+  // The reference used by the editor/preview/grid. Forced to Arial in Draw
+  // your font (hardcoded, never user-configurable). Reflects the dropdown in
+  // Other Fonts.
+  function effectiveRefFont() {
+    return activeTab === 'mine' ? 'Arial' : refFontSelect.value;
+  }
+  async function syncReference() {
+    const ref = effectiveRefFont();
+    editor.updateReferenceFont(ref);
+    preview.setReferenceFont(ref);
+    await updateCharSet(ref);
+    preview.render();
+  }
   function setTab(which) {
     const isMine = which === 'mine';
     tabMine.classList.toggle('tab--active', isMine);
@@ -424,8 +434,10 @@ async function init() {
     rowMine.hidden = !isMine;
     rowOther.hidden = isMine;
     activeTab = which;
+    // Stroke is meaningful only for the Draw your font flow
+    if (controlStroke) controlStroke.hidden = !isMine;
   }
-  tabMine.addEventListener('click', () => {
+  tabMine.addEventListener('click', async () => {
     if (activeTab === 'other') {
       const drawn = getDrawnCount(activeChars);
       if (drawn > 0) {
@@ -436,8 +448,21 @@ async function init() {
       }
     }
     setTab('mine');
+    await syncReference();
+    updateGenerateMineAvailability();
   });
-  tabOther.addEventListener('click', () => setTab('other'));
+  tabOther.addEventListener('click', async () => {
+    setTab('other');
+    await syncReference();
+    updateGenerateMineAvailability();
+  });
+
+  // Initial sync to the default Mine tab — the editor/preview should ghost
+  // Arial regardless of the saved Other-Fonts reference.
+  await syncReference();
+
+  // Apply stroke visibility for the initial tab
+  if (controlStroke) controlStroke.hidden = activeTab !== 'mine';
 
   // The two "Import font" buttons in the rows reuse the same hidden file input
   // as the top Import button. Handler differentiates by extension.

@@ -32,21 +32,18 @@
         <button class="tab" id="tabOther" data-tab="other">Other fonts</button>
       </div>
       <div class="top-bar__row top-bar__row--section" id="rowMine">
-        <label class="control">
-          <span class="control__label">Reference</span>
-          <select id="refFontMine" class="control__select"><option value="">None</option></select>
-        </label>
-        <button class="btn btn--ghost" id="importFontMineBtn">Import font</button>
         <span class="top-bar__hint">Draw at least 2 glyphs to start generating a custom font</span>
         <div class="top-bar__spacer"></div>
         <button class="btn btn--outline" id="generateMineBtn" disabled>Generate</button>
+        <select id="refFontMine" hidden></select>
+        <button id="importFontMineBtn" hidden></button>
       </div>
       <div class="top-bar__row top-bar__row--section" id="rowOther" hidden>
         <label class="control">
           <span class="control__label">Choose a font</span>
           <select id="refFont" class="control__select"><option value="">None</option></select>
         </label>
-        <button class="btn btn--ghost" id="importFontOtherBtn">Import font</button>
+        <button class="btn btn--outline btn--outline-soft" id="importFontOtherBtn">Import font</button>
         <label class="control" id="controlBrush">
           <span class="control__label">Style</span>
           <select id="brushType" class="control__select">

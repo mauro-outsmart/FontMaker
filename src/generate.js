@@ -37,10 +37,13 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
       } else if (brushType === 'original-italic') {
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 10);
       } else if (skipExisting) {
-        // Draw-your-font fill-in: render the reference smaller, lose serif
-        // detail, and apply gentler humanize so generated glyphs read like
-        // simple hand-drawn letters rather than tracings of a serif typeface.
-        strokes = generateGlyph(char, referenceFont, DRAW_YOUR_FONT_SIZE, /* smooth */ true);
+        // Draw-your-font fill-in: ignore the user's chosen reference for the
+        // skeleton (which often has serifs/contrast that don't match a casual
+        // hand-drawn aesthetic) and trace a clean sans-serif silhouette
+        // instead. Render small, smooth heavily, and skip humanize jitter so
+        // the output reads as deliberate pen strokes that match the user's
+        // own drawings rather than ornate font tracings.
+        strokes = generateGlyph(char, 'Helvetica, Arial, sans-serif', DRAW_YOUR_FONT_SIZE, /* smooth */ true);
       } else {
         strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
       }
@@ -131,12 +134,18 @@ function generateGlyph(char, referenceFont, size, smooth = false) {
 
   strokes = normalizeStrokes(strokes, size);
   if (smooth) {
-    // Two passes of Chaikin take the staircase out of the skeleton trace and
-    // give continuous curves more like a pen tracking, then a light simplify
-    // keeps point counts manageable.
-    strokes = strokes.map(s => s.length >= 3 ? simplify(chaikin(chaikin(s)), 0.005) : s);
+    // Heavy smoothing: four Chaikin passes flatten the stair-step skeleton
+    // into a continuous pen-like curve, then a moderate Douglas-Peucker
+    // simplify trims redundant points so the stroke reads as a deliberate
+    // gesture rather than a noisy trace.
+    strokes = strokes
+      .map(s => (s.length >= 3 ? simplify(chaikin(chaikin(chaikin(chaikin(s)))), 0.008) : s))
+      .filter(s => s.length >= 2);
   }
-  strokes = humanizeStrokes(strokes, char, smooth ? 0.25 : 1);
+  // Humanize: skip entirely in smooth mode so generated strokes are clean and
+  // visually consistent with the user's own pen tracking (which has natural
+  // smoothness, not algorithmic jitter).
+  if (!smooth) strokes = humanizeStrokes(strokes, char, 1);
   strokes = addTimingData(strokes);
 
   return strokes;
