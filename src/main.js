@@ -118,7 +118,7 @@ async function init() {
   const glyphGrid = document.getElementById('glyphGrid');
 
   function openGlyph(char) {
-    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value), brushTypeSelect.value);
+    editor.open(char, refFontSelect.value, parseInt(strokeWidthInput.value), brushTypeSelect.value, activeTab === 'mine');
   }
 
   function rebuildGrid() {
@@ -399,10 +399,9 @@ async function init() {
     const enough = userCount >= MIN_USER_GLYPHS;
     generateMineBtn.disabled = !refFontSelect.value || !enough;
     if (hint) {
-      const remaining = Math.max(0, MIN_USER_GLYPHS - userCount);
-      hint.textContent = remaining > 0
-        ? `draw ${remaining} more glyph${remaining === 1 ? '' : 's'} to enable generate`
-        : 'ready — tap generate to fill in the rest';
+      hint.textContent = enough
+        ? 'Ready — tap generate to fill in the rest'
+        : 'Draw at least 2 glyphs to start generating a custom font';
     }
   }
   updateGenerateMineAvailability();
@@ -410,19 +409,34 @@ async function init() {
   refFontMineSelect.addEventListener('change', updateGenerateMineAvailability);
   window.addEventListener('glyph-updated', updateGenerateMineAvailability);
 
-  // Tabs — switch between the YOUR FONT and OTHER FONTS rows
+  // Tabs — switch between the YOUR FONT and OTHER FONTS rows. The two flows
+  // produce incompatible glyph data (handdrawn strokes vs filled contours), so
+  // moving from Other Fonts back to Draw Your Font clears the slate.
   const tabMine = document.getElementById('tabMine');
   const tabOther = document.getElementById('tabOther');
   const rowMine = document.getElementById('rowMine');
   const rowOther = document.getElementById('rowOther');
+  let activeTab = 'mine';
   function setTab(which) {
     const isMine = which === 'mine';
     tabMine.classList.toggle('tab--active', isMine);
     tabOther.classList.toggle('tab--active', !isMine);
     rowMine.hidden = !isMine;
     rowOther.hidden = isMine;
+    activeTab = which;
   }
-  tabMine.addEventListener('click', () => setTab('mine'));
+  tabMine.addEventListener('click', () => {
+    if (activeTab === 'other') {
+      const drawn = getDrawnCount(activeChars);
+      if (drawn > 0) {
+        if (!confirm('Switching to Draw your font will clear all current glyphs. Continue?')) return;
+        clearAllGlyphs();
+        rebuildGrid();
+        preview.render();
+      }
+    }
+    setTab('mine');
+  });
   tabOther.addEventListener('click', () => setTab('other'));
 
   // The two "Import font" buttons in the rows reuse the same hidden file input

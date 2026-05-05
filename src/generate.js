@@ -2,6 +2,7 @@ import { GLYPHS, beginBatch, batchSaveGlyph, flushBatch, endBatch, getGlyph } fr
 import { extractContours, chaikin, simplify, fixWinding } from './contour.js';
 
 const CANVAS_SIZE = 100;
+const DRAW_YOUR_FONT_SIZE = 70; // smaller bitmap → simpler skeleton, fewer serifs
 const ORIGINAL_SIZE = 300;
 const FLUSH_INTERVAL = 20;
 
@@ -35,6 +36,11 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 0);
       } else if (brushType === 'original-italic') {
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 10);
+      } else if (skipExisting) {
+        // Draw-your-font fill-in: render the reference smaller, lose serif
+        // detail, and apply gentler humanize so generated glyphs read like
+        // simple hand-drawn letters rather than tracings of a serif typeface.
+        strokes = generateGlyph(char, referenceFont, DRAW_YOUR_FONT_SIZE, /* smooth */ true);
       } else {
         strokes = generateGlyph(char, referenceFont, CANVAS_SIZE);
       }
@@ -95,7 +101,7 @@ function generateOriginalGlyph(char, referenceFont, size, italicDeg) {
   });
 }
 
-function generateGlyph(char, referenceFont, size) {
+function generateGlyph(char, referenceFont, size, smooth = false) {
   const grid = renderCharToBitmap(char, referenceFont, size);
 
   let hasPixels = false;
@@ -124,7 +130,13 @@ function generateGlyph(char, referenceFont, size) {
   });
 
   strokes = normalizeStrokes(strokes, size);
-  strokes = humanizeStrokes(strokes, char);
+  if (smooth) {
+    // Two passes of Chaikin take the staircase out of the skeleton trace and
+    // give continuous curves more like a pen tracking, then a light simplify
+    // keeps point counts manageable.
+    strokes = strokes.map(s => s.length >= 3 ? simplify(chaikin(chaikin(s)), 0.005) : s);
+  }
+  strokes = humanizeStrokes(strokes, char, smooth ? 0.25 : 1);
   strokes = addTimingData(strokes);
 
   return strokes;
@@ -493,7 +505,7 @@ function makeRng(seed) {
   };
 }
 
-function humanizeStrokes(strokes, char) {
+function humanizeStrokes(strokes, char, intensity = 1) {
   const rand = makeRng(char.charCodeAt(0) * 7 + 13);
 
   return strokes.map(stroke => {
@@ -502,12 +514,15 @@ function humanizeStrokes(strokes, char) {
     const cx = stroke.reduce((s, p) => s + p.x, 0) / stroke.length;
     const cy = stroke.reduce((s, p) => s + p.y, 0) / stroke.length;
 
-    // Global stroke transform
-    const rotation = (rand() * 2 - 1) * 0.015;
-    const scaleX = 1.0 + (rand() * 2 - 1) * 0.02;
-    const scaleY = 1.0 + (rand() * 2 - 1) * 0.02;
-    const translateX = (rand() * 2 - 1) * 0.008;
-    const translateY = (rand() * 2 - 1) * 0.008;
+    // Global stroke transform — scale wobble with intensity so the smooth
+    // mode produces near-identical placements between glyphs
+    const rotation = (rand() * 2 - 1) * 0.015 * intensity;
+    const scaleX = 1.0 + (rand() * 2 - 1) * 0.02 * intensity;
+    const scaleY = 1.0 + (rand() * 2 - 1) * 0.02 * intensity;
+    const translateX = (rand() * 2 - 1) * 0.008 * intensity;
+    const translateY = (rand() * 2 - 1) * 0.008 * intensity;
+    const overshoot = 0.08 * intensity;
+    const jitterScale = 0.0025 * intensity;
 
     return stroke.map((p, i) => {
       const t = stroke.length <= 1 ? 0 : i / (stroke.length - 1);
@@ -520,10 +535,9 @@ function humanizeStrokes(strokes, char) {
       x = rx * scaleX + cx + translateX;
       y = ry * scaleY + cy + translateY;
 
-      // Per-point jitter (fades at endpoints) — kept very small so strokes
-      // read as smooth, not noisy
+      // Per-point jitter (fades at endpoints)
       const edgeFade = Math.sin(t * Math.PI);
-      const jitterAmount = 0.0025 * edgeFade;
+      const jitterAmount = jitterScale * edgeFade;
       x += (rand() * 2 - 1) * jitterAmount;
       y += (rand() * 2 - 1) * jitterAmount;
 
@@ -531,14 +545,14 @@ function humanizeStrokes(strokes, char) {
       if (i === 0 && stroke.length > 3) {
         const dx = stroke[1].x - stroke[0].x;
         const dy = stroke[1].y - stroke[0].y;
-        x -= dx * 0.08 * rand();
-        y -= dy * 0.08 * rand();
+        x -= dx * overshoot * rand();
+        y -= dy * overshoot * rand();
       }
       if (i === stroke.length - 1 && stroke.length > 3) {
         const dx = stroke[stroke.length - 1].x - stroke[stroke.length - 2].x;
         const dy = stroke[stroke.length - 1].y - stroke[stroke.length - 2].y;
-        x += dx * 0.08 * rand();
-        y += dy * 0.08 * rand();
+        x += dx * overshoot * rand();
+        y += dy * overshoot * rand();
       }
 
       return { x, y };

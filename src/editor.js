@@ -41,7 +41,7 @@ export class Editor {
     // Kerning toggle
     this.kerningToggle.addEventListener('change', () => {
       this.kerningMode = this.kerningToggle.checked;
-      this.engine.drawingEnabled = !this.kerningMode;
+      this.engine.drawingEnabled = !this.kerningMode && this.canDraw !== false;
       this.canvas.classList.toggle('editor-canvas--kerning-mode', this.kerningMode);
       this.engine.render();
     });
@@ -79,11 +79,12 @@ export class Editor {
     }
   }
 
-  open(char, referenceFont, strokeWidth, brushType) {
+  open(char, referenceFont, strokeWidth, brushType, canDraw = true) {
     this.currentChar = char;
     this.currentIndex = this._glyphChars.indexOf(char);
     this.referenceFont = referenceFont;
     this.strokeWidth = strokeWidth;
+    this.canDraw = canDraw;
     this.label.textContent = char;
     this.modal.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -91,7 +92,8 @@ export class Editor {
     // Reset kerning mode
     this.kerningToggle.checked = false;
     this.kerningMode = false;
-    this.engine.drawingEnabled = true;
+    this.engine.drawingEnabled = canDraw;
+    this.canvas.classList.toggle('editor-canvas--readonly', !canDraw);
     this.canvas.classList.remove('editor-canvas--kerning-mode');
 
     // Wait for layout before sizing canvas
@@ -173,14 +175,14 @@ export class Editor {
     if (this.currentIndex <= 0) return;
     this._autoSave();
     const newChar = this._glyphChars[this.currentIndex - 1];
-    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType);
+    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType, this.canDraw);
   }
 
   next() {
     if (this.currentIndex >= this._glyphChars.length - 1) return;
     this._autoSave();
     const newChar = this._glyphChars[this.currentIndex + 1];
-    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType);
+    this.open(newChar, this.referenceFont, this.strokeWidth, this.engine.brushType, this.canDraw);
   }
 
   setGlyphChars(chars) {

@@ -28,7 +28,7 @@
         <input type="file" id="importFile" accept=".json,.ttf,.otf,.woff,.woff2" hidden>
       </div>
       <div class="top-bar__row top-bar__tabs">
-        <button class="tab tab--active" id="tabMine" data-tab="mine">Draw your font...</button>
+        <button class="tab tab--active" id="tabMine" data-tab="mine">Draw your font</button>
         <button class="tab" id="tabOther" data-tab="other">Other fonts</button>
       </div>
       <div class="top-bar__row top-bar__row--section" id="rowMine">
@@ -37,7 +37,7 @@
           <select id="refFontMine" class="control__select"><option value="">None</option></select>
         </label>
         <button class="btn btn--ghost" id="importFontMineBtn">Import font</button>
-        <span class="top-bar__hint">draw 2 glyphs and then tap generate</span>
+        <span class="top-bar__hint">Draw at least 2 glyphs to start generating a custom font</span>
         <div class="top-bar__spacer"></div>
         <button class="btn btn--outline" id="generateMineBtn" disabled>Generate</button>
       </div>
@@ -57,15 +57,16 @@
             <option value="original-italic">Original italic</option>
           </select>
         </label>
+        <div class="top-bar__spacer"></div>
+        <button class="btn btn--outline" id="generateBtn" disabled>Generate</button>
+      </div>
+      <div class="top-bar__row top-bar__row--section">
         <label class="control" id="controlStroke">
           <span class="control__label">Stroke</span>
           <input type="range" id="strokeWidth" min="2" max="24" value="8" class="control__range">
           <span class="control__value" id="strokeWidthValue">8px</span>
         </label>
-        <div class="top-bar__spacer"></div>
-        <button class="btn btn--outline" id="generateBtn" disabled>Generate</button>
-      </div>
-      <div class="top-bar__row top-bar__row--section">
+        <span class="top-bar__divider">|</span>
         <label class="control" id="controlKerning">
           <span class="control__label">Kerning</span>
           <input type="range" id="kerning" min="-200" max="200" value="0" step="10" class="control__range">
