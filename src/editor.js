@@ -46,24 +46,19 @@ export class Editor {
       this.engine.render();
     });
 
-    // Brush size dots — three quick stroke widths the user can swap between
-    // while drawing. Falls back gracefully if the markup is absent.
-    this.brushSizes = document.getElementById('brushSizes');
-    if (this.brushSizes) {
-      this.brushSizes.addEventListener('click', (e) => {
-        const dot = e.target.closest('.brush-dot');
-        if (!dot) return;
-        const size = parseInt(dot.dataset.size, 10);
+    // Stroke-size slider in the editor modal — mirrors the global slider so
+    // changes here propagate to preview/grid/export and vice versa.
+    this.editorStrokeInput = document.getElementById('editorStrokeWidth');
+    this.editorStrokeValue = document.getElementById('editorStrokeWidthValue');
+    if (this.editorStrokeInput) {
+      this.editorStrokeInput.addEventListener('input', () => {
+        const size = parseInt(this.editorStrokeInput.value, 10);
         if (!Number.isFinite(size)) return;
-        this.brushSizes.querySelectorAll('.brush-dot').forEach((d) =>
-          d.classList.toggle('brush-dot--active', d === dot)
-        );
+        if (this.editorStrokeValue) this.editorStrokeValue.textContent = size + 'px';
         this.strokeWidth = size;
         this.engine.setStrokeWidth(size);
-        // Notify the rest of the app so the global strokeWidth slider stays
-        // in sync (and the new width is used in preview/grid/export).
         const slider = document.getElementById('strokeWidth');
-        if (slider) {
+        if (slider && slider !== this.editorStrokeInput) {
           slider.value = String(size);
           slider.dispatchEvent(new Event('input'));
         }
@@ -127,15 +122,9 @@ export class Editor {
     requestAnimationFrame(() => {
       if (wasHidden) this._sizeCanvas();
       this.engine.setStrokeWidth(strokeWidth);
-      // Mark the closest brush-size dot as active for the current width
-      if (this.brushSizes) {
-        const dots = Array.from(this.brushSizes.querySelectorAll('.brush-dot'));
-        let best = dots[0], bestDelta = Infinity;
-        for (const d of dots) {
-          const delta = Math.abs(parseInt(d.dataset.size, 10) - strokeWidth);
-          if (delta < bestDelta) { bestDelta = delta; best = d; }
-        }
-        dots.forEach((d) => d.classList.toggle('brush-dot--active', d === best));
+      if (this.editorStrokeInput) {
+        this.editorStrokeInput.value = String(strokeWidth);
+        if (this.editorStrokeValue) this.editorStrokeValue.textContent = strokeWidth + 'px';
       }
       // Always sync brush type at open time so the engine matches the current
       // dropdown selection regardless of init order.

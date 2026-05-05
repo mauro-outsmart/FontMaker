@@ -434,11 +434,17 @@ async function init() {
   }
   async function syncReference() {
     const ref = effectiveRefFont();
+    // Persist the effective ref so grid thumbnails (which read from settings)
+    // match the active tab. The Other Fonts dropdown keeps its user-picked
+    // value in refFontSelect.value so switching back to Other restores it.
+    saveSettings({ referenceFont: ref });
     editor.updateReferenceFont(ref);
     preview.setReferenceFont(ref);
     await updateCharSet(ref);
+    refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
     preview.render();
   }
+  const strokeKerningDivider = document.getElementById('strokeKerningDivider');
   function setTab(which) {
     const isMine = which === 'mine';
     tabMine.classList.toggle('tab--active', isMine);
@@ -446,8 +452,10 @@ async function init() {
     rowMine.hidden = !isMine;
     rowOther.hidden = isMine;
     activeTab = which;
-    // Stroke is meaningful only for the Draw your font flow
+    // Stroke (and the divider that separates it from Kerning) only make sense
+    // for the Draw your font flow.
     if (controlStroke) controlStroke.hidden = !isMine;
+    if (strokeKerningDivider) strokeKerningDivider.hidden = !isMine;
   }
   async function handleTabClick(target) {
     if (target === activeTab) return;

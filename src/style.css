@@ -469,38 +469,15 @@ body {
   cursor: default;
 }
 
-/* Brush-size selector under the editor canvas */
-.brush-sizes {
-  display: flex;
-  align-items: center;
+/* Stroke-size slider under the editor canvas */
+.editor-stroke {
   justify-content: center;
-  gap: 14px;
-  padding: 14px 4px 4px;
+  padding: 14px 4px 24px;
 }
 
-.brush-dot {
-  background: var(--text-muted);
-  border: 2px solid transparent;
-  border-radius: 50%;
-  padding: 0;
-  cursor: pointer;
-  transition: background 120ms, border-color 120ms, transform 120ms;
+.editor-stroke .control__range {
+  width: 160px;
 }
-
-.brush-dot:hover:not(:disabled) {
-  background: var(--text);
-  transform: scale(1.1);
-}
-
-.brush-dot--active {
-  background: var(--text);
-  border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--bg) inset;
-}
-
-.brush-dot--sm { width: 8px; height: 8px; }
-.brush-dot--md { width: 14px; height: 14px; }
-.brush-dot--lg { width: 22px; height: 22px; }
 
 /* Responsive */
 @media (max-width: 640px) {
