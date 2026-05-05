@@ -204,7 +204,8 @@ body {
   border-color: var(--text);
   border-bottom-color: transparent;
   background: var(--bg);
-  margin-bottom: -1px;
+  /* Lift the selected tab 1px above the baseline so it visually pops out */
+  transform: translateY(-1px);
 }
 
 .top-bar__hint {
@@ -467,6 +468,38 @@ body {
 .editor-canvas--readonly {
   cursor: default;
 }
+
+/* Brush-size selector inside the editor header */
+.brush-sizes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.brush-dot {
+  background: var(--text-muted);
+  border: 2px solid transparent;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, transform 120ms;
+}
+
+.brush-dot:hover:not(:disabled) {
+  background: var(--text);
+  transform: scale(1.1);
+}
+
+.brush-dot--active {
+  background: var(--text);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg) inset;
+}
+
+.brush-dot--sm { width: 8px; height: 8px; }
+.brush-dot--md { width: 14px; height: 14px; }
+.brush-dot--lg { width: 22px; height: 22px; }
 
 /* Responsive */
 @media (max-width: 640px) {

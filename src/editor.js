@@ -46,6 +46,30 @@ export class Editor {
       this.engine.render();
     });
 
+    // Brush size dots — three quick stroke widths the user can swap between
+    // while drawing. Falls back gracefully if the markup is absent.
+    this.brushSizes = document.getElementById('brushSizes');
+    if (this.brushSizes) {
+      this.brushSizes.addEventListener('click', (e) => {
+        const dot = e.target.closest('.brush-dot');
+        if (!dot) return;
+        const size = parseInt(dot.dataset.size, 10);
+        if (!Number.isFinite(size)) return;
+        this.brushSizes.querySelectorAll('.brush-dot').forEach((d) =>
+          d.classList.toggle('brush-dot--active', d === dot)
+        );
+        this.strokeWidth = size;
+        this.engine.setStrokeWidth(size);
+        // Notify the rest of the app so the global strokeWidth slider stays
+        // in sync (and the new width is used in preview/grid/export).
+        const slider = document.getElementById('strokeWidth');
+        if (slider) {
+          slider.value = String(size);
+          slider.dispatchEvent(new Event('input'));
+        }
+      });
+    }
+
     // Kerning drag handlers
     this.canvas.addEventListener('pointerdown', (e) => this._onKerningPointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this._onKerningPointerMove(e));
@@ -86,6 +110,10 @@ export class Editor {
     this.strokeWidth = strokeWidth;
     this.canDraw = canDraw;
     this.label.textContent = char;
+    // Track whether this is a fresh open (user clicking a card) vs a
+    // navigation within the open editor (prev/next). Only size the canvas on
+    // a fresh open so navigating doesn't trigger a visible resize jump.
+    const wasHidden = this.modal.hidden;
     this.modal.hidden = false;
     document.body.style.overflow = 'hidden';
 
@@ -96,10 +124,19 @@ export class Editor {
     this.canvas.classList.toggle('editor-canvas--readonly', !canDraw);
     this.canvas.classList.remove('editor-canvas--kerning-mode');
 
-    // Wait for layout before sizing canvas
     requestAnimationFrame(() => {
-      this._sizeCanvas();
+      if (wasHidden) this._sizeCanvas();
       this.engine.setStrokeWidth(strokeWidth);
+      // Mark the closest brush-size dot as active for the current width
+      if (this.brushSizes) {
+        const dots = Array.from(this.brushSizes.querySelectorAll('.brush-dot'));
+        let best = dots[0], bestDelta = Infinity;
+        for (const d of dots) {
+          const delta = Math.abs(parseInt(d.dataset.size, 10) - strokeWidth);
+          if (delta < bestDelta) { bestDelta = delta; best = d; }
+        }
+        dots.forEach((d) => d.classList.toggle('brush-dot--active', d === best));
+      }
       // Always sync brush type at open time so the engine matches the current
       // dropdown selection regardless of init order.
       if (brushType !== undefined) this.engine.setBrushType(brushType);

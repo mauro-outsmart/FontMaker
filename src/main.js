@@ -16,6 +16,10 @@ async function init() {
   // Load settings
   const settings = getSettings();
 
+  // Active tab — declared early so listeners attached before the tabs section
+  // can read it without hitting the TDZ.
+  let activeTab = 'mine';
+
   // Restore font name
   const fontNameInput = document.getElementById('fontName');
   fontNameInput.value = settings.fontName;
@@ -399,6 +403,12 @@ async function init() {
         ? 'Ready — tap generate to fill in the rest'
         : 'Draw at least 2 glyphs to start generating a custom font';
     }
+    // Stroke is meaningless until the user has drawn something
+    if (activeTab === 'mine') {
+      const allow = userCount > 0;
+      strokeWidthInput.disabled = !allow;
+      document.getElementById('controlStroke').classList.toggle('control--disabled', !allow);
+    }
   }
   updateGenerateMineAvailability();
   refFontSelect.addEventListener('change', updateGenerateMineAvailability);
@@ -412,7 +422,6 @@ async function init() {
   const tabOther = document.getElementById('tabOther');
   const rowMine = document.getElementById('rowMine');
   const rowOther = document.getElementById('rowOther');
-  let activeTab = 'mine';
   const controlStroke = document.getElementById('controlStroke');
   // The reference used by the editor/preview/grid. Forced to Arial in Draw
   // your font (hardcoded, never user-configurable). Reflects the dropdown in
@@ -437,25 +446,22 @@ async function init() {
     // Stroke is meaningful only for the Draw your font flow
     if (controlStroke) controlStroke.hidden = !isMine;
   }
-  tabMine.addEventListener('click', async () => {
-    if (activeTab === 'other') {
-      const drawn = getDrawnCount(activeChars);
-      if (drawn > 0) {
-        if (!confirm('Switching to Draw your font will clear all current glyphs. Continue?')) return;
-        clearAllGlyphs();
-        rebuildGrid();
-        preview.render();
-      }
+  async function handleTabClick(target) {
+    if (target === activeTab) return;
+    const drawn = getDrawnCount(activeChars);
+    if (drawn > 0) {
+      const dest = target === 'mine' ? 'Draw your font' : 'Other fonts';
+      if (!confirm(`Switching to ${dest} will clear all current glyphs. Continue?`)) return;
+      clearAllGlyphs();
+      rebuildGrid();
+      preview.render();
     }
-    setTab('mine');
+    setTab(target);
     await syncReference();
     updateGenerateMineAvailability();
-  });
-  tabOther.addEventListener('click', async () => {
-    setTab('other');
-    await syncReference();
-    updateGenerateMineAvailability();
-  });
+  }
+  tabMine.addEventListener('click', () => handleTabClick('mine'));
+  tabOther.addEventListener('click', () => handleTabClick('other'));
 
   // Initial sync to the default Mine tab — the editor/preview should ghost
   // Arial regardless of the saved Other-Fonts reference.
