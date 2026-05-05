@@ -113,11 +113,6 @@
             <input type="checkbox" id="editorKerningToggle" class="control__checkbox" style="accent-color: var(--text);">
             <span class="control__label">Edit kerning</span>
           </label>
-          <div class="brush-sizes" id="brushSizes" role="radiogroup" aria-label="Brush size">
-            <button class="brush-dot brush-dot--sm" data-size="5" title="Small"></button>
-            <button class="brush-dot brush-dot--md brush-dot--active" data-size="10" title="Medium"></button>
-            <button class="brush-dot brush-dot--lg" data-size="18" title="Large"></button>
-          </div>
           <div class="modal__spacer"></div>
           <button class="btn btn--ghost" id="editorUndo">Undo</button>
           <button class="btn btn--ghost" id="editorClear">Clear</button>
@@ -126,6 +121,11 @@
         </div>
         <div class="modal__canvas-wrap" id="editorCanvasWrap">
           <canvas class="editor-canvas" id="editorCanvas"></canvas>
+        </div>
+        <div class="brush-sizes" id="brushSizes" role="radiogroup" aria-label="Brush size">
+          <button class="brush-dot brush-dot--sm" data-size="5" title="Small"></button>
+          <button class="brush-dot brush-dot--md brush-dot--active" data-size="10" title="Medium"></button>
+          <button class="brush-dot brush-dot--lg" data-size="18" title="Large"></button>
         </div>
       </div>
     </div>

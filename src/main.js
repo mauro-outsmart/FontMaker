@@ -31,17 +31,20 @@ async function init() {
   const fonts = await getSystemFonts();
   const refFontSelect = document.getElementById('refFont');
   const refFontMineSelect = document.getElementById('refFontMine');
-  // "None" option is already in HTML; select it if no saved reference font
-  if (!settings.referenceFont) {
-    refFontSelect.value = '';
-    refFontMineSelect.value = '';
+  // Default to Arial when nothing is saved or the saved font is no longer
+  // available (e.g. an uploaded font from a prior session is gone).
+  const savedRef = settings.referenceFont && fonts.includes(settings.referenceFont)
+    ? settings.referenceFont
+    : 'Arial';
+  if (savedRef !== settings.referenceFont) {
+    saveSettings({ referenceFont: savedRef });
   }
   for (const font of fonts) {
     for (const sel of [refFontSelect, refFontMineSelect]) {
       const option = document.createElement('option');
       option.value = font;
       option.textContent = font;
-      if (font === settings.referenceFont) option.selected = true;
+      if (font === savedRef) option.selected = true;
       sel.appendChild(option);
     }
   }
@@ -272,7 +275,7 @@ async function init() {
   });
 
   // Detect initial char set and render grid
-  await updateCharSet(settings.referenceFont);
+  await updateCharSet(savedRef);
 
   // Reset kerning button
   document.getElementById('resetKerningBtn').addEventListener('click', () => {

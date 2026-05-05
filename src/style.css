@@ -469,12 +469,13 @@ body {
   cursor: default;
 }
 
-/* Brush-size selector inside the editor header */
+/* Brush-size selector under the editor canvas */
 .brush-sizes {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 4px;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 4px 4px;
 }
 
 .brush-dot {
