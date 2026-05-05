@@ -318,8 +318,14 @@ async function init() {
     const v = brushTypeSelect.value;
     const isOriginal = v === 'original' || v === 'original-italic';
     const noStyle = v === '';
-    strokeWidthInput.disabled = isOriginal || noStyle;
-    document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal || noStyle);
+    // On Other Fonts, stroke is meaningful only for the two handdrawn brush
+    // types — disable for Original styles or no style. On Draw your font,
+    // updateGenerateMineAvailability owns the disabled state (gates by drawn
+    // count), so don't fight it from here.
+    if (activeTab === 'other') {
+      strokeWidthInput.disabled = isOriginal || noStyle;
+      document.getElementById('controlStroke').classList.toggle('control--disabled', isOriginal || noStyle);
+    }
     const revealLabel = revealAnimCheckbox.closest('label');
     if (revealLabel) {
       revealLabel.classList.toggle('control--disabled', isOriginal);
@@ -444,7 +450,6 @@ async function init() {
     refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
     preview.render();
   }
-  const strokeKerningDivider = document.getElementById('strokeKerningDivider');
   function setTab(which) {
     const isMine = which === 'mine';
     tabMine.classList.toggle('tab--active', isMine);
@@ -452,10 +457,6 @@ async function init() {
     rowMine.hidden = !isMine;
     rowOther.hidden = isMine;
     activeTab = which;
-    // Stroke (and the divider that separates it from Kerning) only make sense
-    // for the Draw your font flow.
-    if (controlStroke) controlStroke.hidden = !isMine;
-    if (strokeKerningDivider) strokeKerningDivider.hidden = !isMine;
   }
   async function handleTabClick(target) {
     if (target === activeTab) return;
@@ -469,6 +470,7 @@ async function init() {
     }
     setTab(target);
     await syncReference();
+    updateStyleDependentControls();
     updateGenerateMineAvailability();
   }
   tabMine.addEventListener('click', () => handleTabClick('mine'));

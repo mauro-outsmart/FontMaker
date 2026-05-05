@@ -46,24 +46,10 @@ export class Editor {
       this.engine.render();
     });
 
-    // Stroke-size slider in the editor modal — mirrors the global slider so
-    // changes here propagate to preview/grid/export and vice versa.
-    this.editorStrokeInput = document.getElementById('editorStrokeWidth');
-    this.editorStrokeValue = document.getElementById('editorStrokeWidthValue');
-    if (this.editorStrokeInput) {
-      this.editorStrokeInput.addEventListener('input', () => {
-        const size = parseInt(this.editorStrokeInput.value, 10);
-        if (!Number.isFinite(size)) return;
-        if (this.editorStrokeValue) this.editorStrokeValue.textContent = size + 'px';
-        this.strokeWidth = size;
-        this.engine.setStrokeWidth(size);
-        const slider = document.getElementById('strokeWidth');
-        if (slider && slider !== this.editorStrokeInput) {
-          slider.value = String(size);
-          slider.dispatchEvent(new Event('input'));
-        }
-      });
-    }
+    // The editor canvas always renders strokes at a fixed medium width for
+    // consistent in-modal feedback. The global slider still drives preview /
+    // grid / export.
+    this.EDITOR_STROKE = 10;
 
     // Kerning drag handlers
     this.canvas.addEventListener('pointerdown', (e) => this._onKerningPointerDown(e));
@@ -121,11 +107,9 @@ export class Editor {
 
     requestAnimationFrame(() => {
       if (wasHidden) this._sizeCanvas();
-      this.engine.setStrokeWidth(strokeWidth);
-      if (this.editorStrokeInput) {
-        this.editorStrokeInput.value = String(strokeWidth);
-        if (this.editorStrokeValue) this.editorStrokeValue.textContent = strokeWidth + 'px';
-      }
+      // Always draw at the fixed medium width inside the editor regardless of
+      // the global stroke setting.
+      this.engine.setStrokeWidth(this.EDITOR_STROKE);
       // Always sync brush type at open time so the engine matches the current
       // dropdown selection regardless of init order.
       if (brushType !== undefined) this.engine.setBrushType(brushType);
