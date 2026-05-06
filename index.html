@@ -55,6 +55,11 @@
             <option value="original-italic">Original italic</option>
           </select>
         </label>
+        <label class="control" id="controlSlant" hidden>
+          <span class="control__label">Slant</span>
+          <input type="range" id="slantAngle" min="10" max="50" value="12" step="1" class="control__range">
+          <span class="control__value" id="slantAngleValue">12&deg;</span>
+        </label>
         <div class="top-bar__spacer"></div>
         <button class="btn btn--outline" id="generateBtn" disabled>Generate</button>
       </div>

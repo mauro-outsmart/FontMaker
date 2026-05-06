@@ -74,6 +74,23 @@ async function init() {
   const brushTypeSelect = document.getElementById('brushType');
   brushTypeSelect.value = settings.brushType;
 
+  // Slant slider — only relevant for Original italic
+  const slantInput = document.getElementById('slantAngle');
+  const slantValue = document.getElementById('slantAngleValue');
+  const controlSlant = document.getElementById('controlSlant');
+  const initialSlant = Number.isFinite(settings.slantAngle) ? settings.slantAngle : 12;
+  slantInput.value = String(initialSlant);
+  slantValue.textContent = initialSlant + '°';
+  function updateSlantVisibility() {
+    if (controlSlant) controlSlant.hidden = brushTypeSelect.value !== 'original-italic';
+  }
+  updateSlantVisibility();
+  slantInput.addEventListener('input', () => {
+    const v = parseInt(slantInput.value, 10);
+    slantValue.textContent = v + '°';
+    saveSettings({ slantAngle: v });
+  });
+
   // Line Boil
   const lineBoilCheckbox = document.getElementById('lineBoil');
   lineBoilCheckbox.checked = settings.lineBoil;
@@ -195,6 +212,7 @@ async function init() {
     saveSettings({ brushType: brushTypeSelect.value });
     editor.updateBrushType(brushTypeSelect.value);
     preview.setBrushType(brushTypeSelect.value);
+    updateSlantVisibility();
     refreshAllThumbnails(glyphGrid, getGlyphSet(activeChars), getSettings());
     updateStyleDependentControls();
   });
@@ -360,6 +378,7 @@ async function init() {
     btn.textContent = 'Cancel (0%)';
 
     const currentSettings = getSettings();
+    const slantDeg = parseInt(slantInput.value, 10) || 12;
     const result = await generateGlyphsProgressive(
       refFontSelect.value,
       activeChars,
@@ -373,7 +392,8 @@ async function init() {
       },
       generateController.signal,
       brushType,
-      skipExisting
+      skipExisting,
+      slantDeg
     );
 
     generateController = null;

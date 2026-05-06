@@ -8,7 +8,7 @@ const FLUSH_INTERVAL = 20;
 
 // --- Public API ---
 
-export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal', skipExisting = false) {
+export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal', skipExisting = false, slantDeg = 12) {
   const isOriginal = brushType === 'original' || brushType === 'original-italic';
   // Handdrawn-style generation is expensive (skeleton trace + humanize) and
   // its results bloat localStorage, so cap it at Basic Latin. Original styles
@@ -41,7 +41,7 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
       if (brushType === 'original') {
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 0);
       } else if (brushType === 'original-italic') {
-        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 12);
+        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, slantDeg);
       } else if (skipExisting) {
         // Draw-your-font fill-in: ignore the user's chosen reference for the
         // skeleton (which often has serifs/contrast that don't match a casual

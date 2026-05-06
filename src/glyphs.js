@@ -166,9 +166,10 @@ function getSettings() {
       kerning: saved.kerning ?? 0,
       lineBoil: saved.lineBoil ?? false,
       brushType: saved.brushType || 'normal',
+      slantAngle: saved.slantAngle ?? 12,
     };
   } catch {
-    return { fontName: 'My Font', referenceFont: 'Arial', strokeWidth: 8, kerning: 0, lineBoil: false, brushType: 'normal' };
+    return { fontName: 'My Font', referenceFont: 'Arial', strokeWidth: 8, kerning: 0, lineBoil: false, brushType: 'normal', slantAngle: 12 };
   }
 }
 
