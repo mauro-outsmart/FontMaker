@@ -117,8 +117,22 @@ function isGlyphDrawn(char) {
   return !!(saved && saved.strokes && saved.strokes.length > 0);
 }
 
-function getAllGlyphs(chars = GLYPHS) {
-  return getGlyphSet(chars);
+function getAllGlyphs(chars = null) {
+  // When no explicit char list is given, return every glyph currently in the
+  // store so OTF/web-font/HTML exports cover the full generated character set,
+  // including extended ranges (Latin Extended, Greek, Cyrillic, etc.).
+  if (chars) return getGlyphSet(chars);
+  const store = loadGlyphStore();
+  return Object.keys(store).map((char) => {
+    const saved = store[char];
+    return {
+      char,
+      strokes: saved.strokes || [],
+      width: saved.width || DEFAULT_WIDTH,
+      kerningLeft: saved.kerningLeft ?? null,
+      kerningRight: saved.kerningRight ?? null,
+    };
+  });
 }
 
 function getDrawnCount(chars = null) {
