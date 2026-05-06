@@ -35,7 +35,7 @@ export async function generateGlyphsProgressive(referenceFont, chars, onProgress
       if (brushType === 'original') {
         strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 0);
       } else if (brushType === 'original-italic') {
-        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 10);
+        strokes = generateOriginalGlyph(char, referenceFont, ORIGINAL_SIZE, 12);
       } else if (skipExisting) {
         // Draw-your-font fill-in: ignore the user's chosen reference for the
         // skeleton (which often has serifs/contrast that don't match a casual
