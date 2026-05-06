@@ -472,6 +472,16 @@ body {
   cursor: default;
 }
 
+.app-footer {
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+  padding: 8px 24px;
+  letter-spacing: 0.04em;
+  user-select: text;
+}
+
 /* Stroke-size slider under the editor canvas */
 .editor-stroke {
   justify-content: center;
