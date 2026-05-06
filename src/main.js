@@ -469,6 +469,13 @@ async function init() {
       preview.render();
     }
     setTab(target);
+    // Draw your font is always a handdrawn flow — reset the brush type to
+    // 'normal' so the editor doesn't render user pen strokes via the Original
+    // (filled-contour) renderer, which produces the wrong shape.
+    if (target === 'mine' && brushTypeSelect.value !== 'normal' && brushTypeSelect.value !== 'growing') {
+      brushTypeSelect.value = 'normal';
+      brushTypeSelect.dispatchEvent(new Event('change'));
+    }
     await syncReference();
     updateStyleDependentControls();
     updateGenerateMineAvailability();
