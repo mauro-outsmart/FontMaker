@@ -60,11 +60,17 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
     }
     const yShift = isFinite(minYFont) ? -minYFont : 0;
 
+    // Scale glyphs and advance up so cap height ends near 700 in 1000-unit
+    // em — matching typical fonts. Our bitmap render uses fontSize = 0.7 *
+    // size which gives cap height ~500 in font units; multiplying by 1.4
+    // brings it in line with standard typography.
+    const SCALE_UP = 1.4;
+
     const path = new opentype.Path();
     for (const points of validContours) {
-      path.moveTo(points[0].x, points[0].y + yShift);
+      path.moveTo(points[0].x * SCALE_UP, (points[0].y + yShift) * SCALE_UP);
       for (let i = 1; i < points.length; i++) {
-        path.lineTo(points[i].x, points[i].y + yShift);
+        path.lineTo(points[i].x * SCALE_UP, (points[i].y + yShift) * SCALE_UP);
       }
       path.close();
     }
@@ -80,7 +86,7 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
     glyphs.push(new opentype.Glyph({
       name,
       unicode,
-      advanceWidth: glyphAdvance,
+      advanceWidth: Math.round(glyphAdvance * SCALE_UP),
       path,
     }));
   }
