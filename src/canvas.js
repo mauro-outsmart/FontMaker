@@ -90,10 +90,9 @@ export class DrawingEngine {
 
     const isOriginal = isOriginalStyle(this.brushType);
 
-    // Skip the faded reference glyph for Original/italic — the filled glyph
-    // IS the reference, and overlaying the upright ghost behind a sheared
-    // glyph creates visible halos.
-    if (!isOriginal) this._drawReference();
+    // Always draw the faded reference so the user keeps the preview while
+    // editing, regardless of brush style.
+    this._drawReference();
 
     if (isOriginal) {
       // Filled-glyph rendering needs all contours in one path

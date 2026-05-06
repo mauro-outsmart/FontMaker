@@ -68,7 +68,7 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
     ctx.save();
     const fontSize = h * 0.7;
     ctx.font = `${fontSize}px "${settings.referenceFont}"`;
-    let alpha = 0.20; // empty card
+    let alpha = 0.12; // empty card — light preview
     if (hasStrokes) alpha = isOriginalStyle(brushType) ? 0.04 : 0.06;
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.textAlign = 'center';
