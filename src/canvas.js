@@ -126,7 +126,10 @@ export class DrawingEngine {
     ctx.save();
     const fontSize = squareSize * 0.7;
     ctx.font = `${fontSize}px "${this.referenceFont}"`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    // Brighter when the user hasn't drawn anything yet so the preview is
+    // clearly visible; faint once strokes exist so they don't fight it.
+    const hasStrokes = this.strokes && this.strokes.length > 0;
+    ctx.fillStyle = hasStrokes ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.22)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.referenceGlyph, extraPx + squareSize / 2, squareSize / 2);
