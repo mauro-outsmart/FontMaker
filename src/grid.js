@@ -60,17 +60,17 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
   const strokesToDraw = customStrokes || glyph.strokes;
   const hasStrokes = !!(strokesToDraw && strokesToDraw.length);
 
-  // Draw the reference font as a preview behind the strokes. When the card
-  // has no strokes yet, render it more visibly so the user can see what each
-  // character looks like before generating. For Original styles with strokes
-  // present, skip the ghost entirely (the filled contour IS the reference,
-  // and overlaying creates halos).
-  const showGhost = settings.referenceFont && (!hasStrokes || !isOriginalStyle(brushType));
-  if (showGhost) {
+  // Draw the reference font as a preview behind the strokes. Always shown
+  // when a reference is set so the user sees what each character looks like.
+  // Bright when the card has no strokes; faint when strokes are present
+  // (skeleton handdrawn or filled Original) so the rendered glyph reads on top.
+  if (settings.referenceFont) {
     ctx.save();
     const fontSize = h * 0.7;
     ctx.font = `${fontSize}px "${settings.referenceFont}"`;
-    ctx.fillStyle = hasStrokes ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.32)';
+    let alpha = 0.32; // empty card
+    if (hasStrokes) alpha = isOriginalStyle(brushType) ? 0.05 : 0.08;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(glyph.char, w / 2, h / 2);
