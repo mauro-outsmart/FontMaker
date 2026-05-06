@@ -40,20 +40,31 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
     const contours = isOriginal
       ? glyph.strokes.map(s => s.map(p => ({ x: p.x * TRACE_SIZE, y: p.y * TRACE_SIZE })))
       : glyphToContours(glyph.strokes, strokeWidth, brushType);
-    const path = new opentype.Path();
 
+    // Compute the glyph's contour points in font units first, then normalize
+    // vertically so the glyph's bottom sits on the baseline (y_font = 0).
+    // Without this, glyphs that were rendered centered in their bitmap end
+    // up floating ~270 units above the baseline and read as superscripts in
+    // any text editor that uses our font.
+    const validContours = [];
+    let minYFont = Infinity;
     for (const contour of contours) {
       if (contour.length < 3) continue;
+      const points = contour.map((p) => {
+        const x = p.x * scale + kl;
+        const y = unitsPerEm - p.y * scale;
+        if (y < minYFont) minYFont = y;
+        return { x, y };
+      });
+      validContours.push(points);
+    }
+    const yShift = isFinite(minYFont) ? -minYFont : 0;
 
-      path.moveTo(
-        contour[0].x * scale + kl,
-        unitsPerEm - contour[0].y * scale
-      );
-      for (let i = 1; i < contour.length; i++) {
-        path.lineTo(
-          contour[i].x * scale + kl,
-          unitsPerEm - contour[i].y * scale
-        );
+    const path = new opentype.Path();
+    for (const points of validContours) {
+      path.moveTo(points[0].x, points[0].y + yShift);
+      for (let i = 1; i < points.length; i++) {
+        path.lineTo(points[i].x, points[i].y + yShift);
       }
       path.close();
     }
