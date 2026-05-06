@@ -41,24 +41,24 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
       ? glyph.strokes.map(s => s.map(p => ({ x: p.x * TRACE_SIZE, y: p.y * TRACE_SIZE })))
       : glyphToContours(glyph.strokes, strokeWidth, brushType);
 
-    // Compute the glyph's contour points in font units first, then normalize
-    // vertically so the glyph's bottom sits on the baseline (y_font = 0).
-    // Without this, glyphs that were rendered centered in their bitmap end
-    // up floating ~270 units above the baseline and read as superscripts in
-    // any text editor that uses our font.
+    // Compute the glyph's contour points in font units first, then apply a
+    // constant baseline shift so that the typographic baseline of the rendered
+    // bitmap (at p.y_norm ≈ 0.73 for textBaseline='middle' at canvas center)
+    // maps to y_font = 0. A constant — not per-glyph — shift means descenders
+    // (p, q, g, j, y) correctly extend BELOW the baseline rather than sitting
+    // on it.
+    const BASELINE_RATIO = 0.69;
+    const yShift = -(1 - BASELINE_RATIO) * unitsPerEm; // = -270 for unitsPerEm 1000
+
     const validContours = [];
-    let minYFont = Infinity;
     for (const contour of contours) {
       if (contour.length < 3) continue;
-      const points = contour.map((p) => {
-        const x = p.x * scale + kl;
-        const y = unitsPerEm - p.y * scale;
-        if (y < minYFont) minYFont = y;
-        return { x, y };
-      });
+      const points = contour.map((p) => ({
+        x: p.x * scale + kl,
+        y: unitsPerEm - p.y * scale,
+      }));
       validContours.push(points);
     }
-    const yShift = isFinite(minYFont) ? -minYFont : 0;
 
     // Scale glyphs and advance up so cap height ends near 700 in 1000-unit
     // em — matching typical fonts. Our bitmap render uses fontSize = 0.7 *
