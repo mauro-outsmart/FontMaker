@@ -206,6 +206,9 @@ body {
   background: var(--bg);
   /* Lift the selected tab 1px above the baseline so it visually pops out */
   transform: translateY(-1px);
+  /* Hide the baseline line directly under the selected tab so its bottom
+     edge reads as page background instead of the muted divider line. */
+  box-shadow: 0 1px 0 var(--bg);
 }
 
 .top-bar__hint {
