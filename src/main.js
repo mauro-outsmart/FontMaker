@@ -13,14 +13,14 @@ import { exportWebFont } from './webfont-export.js';
 let activeChars = GLYPHS;
 
 async function init() {
-  // Footer with version + git hash for tracking which build is live.
+  // Version label next to the title input, for tracking which build is live.
   // The constants come from Vite's `define` (see vite.config.js).
-  const footer = document.getElementById('appFooter');
-  if (footer) {
+  const versionEl = document.getElementById('appVersion');
+  if (versionEl) {
     /* global __APP_VERSION__, __GIT_HASH__ */
     const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
     const hash = typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'dev';
-    footer.textContent = `v${version} · ${hash}`;
+    versionEl.textContent = `v${version} · ${hash}`;
   }
 
   // Load settings
