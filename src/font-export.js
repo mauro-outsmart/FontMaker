@@ -58,7 +58,10 @@ export function exportFont(fontName, strokeWidth, kerning = 0, brushType = 'norm
       path.close();
     }
 
-    const unicode = glyph.char.charCodeAt(0);
+    const unicode = glyph.char.codePointAt(0);
+    // opentype.js v1.3.4 expects 16-bit unicode IDs; skip anything outside
+    // the BMP (emoji, supplementary planes) since they'd corrupt the cmap.
+    if (unicode > 0xFFFF) continue;
     const name = unicode >= 33 && unicode <= 126
       ? glyph.char
       : 'uni' + unicode.toString(16).toUpperCase().padStart(4, '0');
