@@ -56,23 +56,28 @@ export function renderThumbnail(canvas, glyph, settings, customStrokes = null) {
 
   ctx.clearRect(0, 0, w, h);
 
-  // Draw reference glyph faded — skip for Original/italic, where the filled
-  // contour glyph already IS the reference.
   const brushType = settings.brushType || 'normal';
-  if (settings.referenceFont && !isOriginalStyle(brushType)) {
+  const strokesToDraw = customStrokes || glyph.strokes;
+  const hasStrokes = !!(strokesToDraw && strokesToDraw.length);
+
+  // Draw the reference font as a preview behind the strokes. When the card
+  // has no strokes yet, render it more visibly so the user can see what each
+  // character looks like before generating. For Original styles with strokes
+  // present, skip the ghost entirely (the filled contour IS the reference,
+  // and overlaying creates halos).
+  const showGhost = settings.referenceFont && (!hasStrokes || !isOriginalStyle(brushType));
+  if (showGhost) {
     ctx.save();
     const fontSize = h * 0.7;
     ctx.font = `${fontSize}px "${settings.referenceFont}"`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.fillStyle = hasStrokes ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.32)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(glyph.char, w / 2, h / 2);
     ctx.restore();
   }
 
-  // Draw strokes
-  const strokesToDraw = customStrokes || glyph.strokes;
-  if (strokesToDraw && strokesToDraw.length) {
+  if (hasStrokes) {
     const lw = (settings.strokeWidth || 8) * (w / 200);
     ctx.save();
     ctx.strokeStyle = '#fff';
