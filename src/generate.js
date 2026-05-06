@@ -9,8 +9,14 @@ const FLUSH_INTERVAL = 20;
 // --- Public API ---
 
 export async function generateGlyphsProgressive(referenceFont, chars, onProgress, signal, brushType = 'normal', skipExisting = false) {
-  // Limit to Basic Latin — extended Unicode sets are too slow and overflow storage
-  chars = chars.filter(c => { const code = c.codePointAt(0); return code >= 0x21 && code <= 0x7E; });
+  const isOriginal = brushType === 'original' || brushType === 'original-italic';
+  // Handdrawn-style generation is expensive (skeleton trace + humanize) and
+  // its results bloat localStorage, so cap it at Basic Latin. Original styles
+  // store compact contour polygons and stay reasonable across the full set
+  // detected on the imported font.
+  if (!isOriginal) {
+    chars = chars.filter(c => { const code = c.codePointAt(0); return code >= 0x21 && code <= 0x7E; });
+  }
   const total = chars.length;
   let count = 0;
   beginBatch();
