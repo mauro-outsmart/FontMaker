@@ -14,13 +14,15 @@ let activeChars = GLYPHS;
 
 async function init() {
   // Version label next to the title input, for tracking which build is live.
-  // The constants come from Vite's `define` (see vite.config.js).
+  // The version comes from a meta tag injected by the Vite versionMetaPlugin
+  // (recomputed on every page load so new commits show up without restart).
   const versionEl = document.getElementById('appVersion');
   if (versionEl) {
-    /* global __APP_VERSION__, __GIT_HASH__ */
-    const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
-    const hash = typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'dev';
-    versionEl.textContent = `v${version} · ${hash}`;
+    const meta = document.querySelector('meta[name="app-version"]');
+    if (meta) {
+      const [version, hash] = (meta.content || '|').split('|');
+      versionEl.textContent = `v${version || '0.0.0'} · ${hash || 'dev'}`;
+    }
   }
 
   // Load settings
