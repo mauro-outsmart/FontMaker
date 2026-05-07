@@ -57,8 +57,17 @@ function drawNormal(ctx, points, lineWidth, ox, oy, w, h) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // If the start and end points sit within ~5% of the canvas of each other
+  // (e.g. a skeleton-traced "O", "0", or the bowl of a "B"), treat the path
+  // as a closed loop and use closePath() so the rendered ring is continuous
+  // instead of leaving a visible notch where the trace ended.
+  const start = points[0];
+  const end = points[points.length - 1];
+  const seDist = Math.hypot(end.x - start.x, end.y - start.y);
+  const isClosed = points.length >= 4 && seDist < 0.05;
+
   ctx.beginPath();
-  ctx.moveTo(ox + points[0].x * w, oy + points[0].y * h);
+  ctx.moveTo(ox + start.x * w, oy + start.y * h);
 
   for (let i = 1; i < points.length - 1; i++) {
     const xc = ox + (points[i].x + points[i + 1].x) / 2 * w;
@@ -69,8 +78,8 @@ function drawNormal(ctx, points, lineWidth, ox, oy, w, h) {
       xc, yc
     );
   }
-  const last = points[points.length - 1];
-  ctx.lineTo(ox + last.x * w, oy + last.y * h);
+  ctx.lineTo(ox + end.x * w, oy + end.y * h);
+  if (isClosed) ctx.closePath();
   ctx.stroke();
   ctx.restore();
 }
@@ -85,11 +94,20 @@ function drawGrowing(ctx, points, lineWidth, ox, oy, w, h) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // For closed-loop strokes (O, 0, bowls of B/D/P/etc.) append a final
+  // segment back to the start so the ring renders without a notch.
+  const start = points[0];
+  const end = points[points.length - 1];
+  const seDist = Math.hypot(end.x - start.x, end.y - start.y);
+  const closingPoints = (points.length >= 4 && seDist < 0.05)
+    ? points.concat([points[0]])
+    : points;
+
   let cumDist = 0;
 
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
+  for (let i = 1; i < closingPoints.length; i++) {
+    const prev = closingPoints[i - 1];
+    const curr = closingPoints[i];
     const dx = (curr.x - prev.x) * w;
     const dy = (curr.y - prev.y) * h;
     cumDist += Math.sqrt(dx * dx + dy * dy) / w; // normalize by width
